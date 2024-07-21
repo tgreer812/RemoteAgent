@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AgentCore.CommunicationManagement
+namespace AgentCore.JobManagement
 {
-    internal interface ICommunicationManager : ICoreService
+    internal interface IJobConverter
     {
-
     }
 }

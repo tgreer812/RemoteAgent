@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AgentCore.CommunicationManagement
+namespace AgentCore
 {
-    internal interface ICommunicationManager : ICoreService
+    public interface ICoreService
     {
-
+        void Start();
+        void Stop();
     }
 }

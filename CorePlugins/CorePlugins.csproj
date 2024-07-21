@@ -47,7 +47,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\AgentCommon.csproj">
+    <ProjectReference Include="..\AgentCommon\AgentCommon.csproj">
       <Project>{5461d9ea-4abe-47c5-9654-cb90d315dc39}</Project>
       <Name>AgentCommon</Name>
     </ProjectReference>

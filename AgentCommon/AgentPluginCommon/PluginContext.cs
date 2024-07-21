@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace AgentCommon.AgentPluginCommon
 {
-    public class AgentPluginContext
+    public class PluginContext
     {
         public ILogger Logger { get; set; }
-        public AgentPluginContext()
+        public PluginContext()
         {
 
         }

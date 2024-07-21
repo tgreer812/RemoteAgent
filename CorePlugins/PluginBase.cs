@@ -8,19 +8,34 @@ using System.Threading.Tasks;
 
 namespace CorePlugins
 {
-    public class PluginBase : IAgentPlugin
+    public abstract class PluginBase : IPlugin
     {
         public ILogger Logger { get; set; }
-        public AgentPluginContext Context { get; set; }
+        public PluginContext Context { get; set; }
 
-        public PluginBase(AgentPluginContext context) 
+        public PluginBase(PluginContext context) 
         { 
             // Pull out the logger for convenience
             Logger = context.Logger;
             Context = context;
         }
 
-        public virtual bool Load(AgentPluginArguments agentPluginArguments = null)
+        public virtual bool Load(PluginArguments agentPluginArguments = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool Unload(PluginArguments agentPluginArguments = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool Start(PluginArguments agentPluginArguments = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool Stop(PluginArguments agentPluginArguments = null)
         {
             throw new NotImplementedException();
         }

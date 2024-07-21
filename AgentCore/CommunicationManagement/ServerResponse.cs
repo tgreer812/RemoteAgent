@@ -1,5 +1,4 @@
-﻿using AgentCore.TaskManagement;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +14,6 @@ namespace AgentCore.CommunicationManagement
     {
         private string RawResponse { get; set; }
         private ILogger Logger { get; set; }
-        private CoreTask Task { get; set; }
         private bool IsAgentTask { get; set; }
         private bool IsValid { get; set; }
         public ServerResponse(string response, ILogger logger)
@@ -92,16 +90,5 @@ namespace AgentCore.CommunicationManagement
             return this.IsAgentTask;
         }
 
-        public CoreTask GetAgentTask()
-        {
-            if (this.IsAgentTask)
-            {
-                return this.Task;
-            }
-            else
-            {
-                return null;
-            }
-        }
     }
 }

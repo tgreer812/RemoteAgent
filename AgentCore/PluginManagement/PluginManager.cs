@@ -7,18 +7,18 @@ using System.Reflection;
 using AgentCommon.AgentPluginCommon;
 using CorePlugins;
 using AgentCommon;
-using AgentCore.TaskManagement;
+using AgentCore.JobManagement;
 
 namespace AgentCore.PluginManagement
 {
-    internal class PluginManager
+    internal class PluginManager : IPluginManager
     {
         public ILogger Logger { get; set; }
-        public Dictionary<string, IAgentPlugin> LoadedPlugins { get; set; }
+        public Dictionary<string, IPlugin> LoadedPlugins { get; set; }
         public PluginManager(ILogger logger)
         {
             Logger = logger;
-            LoadedPlugins = new Dictionary<string, IAgentPlugin>();
+            LoadedPlugins = new Dictionary<string, IPlugin>();
         }
 
         public void LoadCorePlugins()
@@ -29,7 +29,7 @@ namespace AgentCore.PluginManagement
             Assembly corePluginsAssembly = Assembly.LoadFrom("CorePlugins.dll");
 
             // Create a context object to pass to the plugins
-            AgentPluginContext context = new AgentPluginContext();
+            PluginContext context = new PluginContext();
             context.Logger = Logger;
             
             var pluginTypes = corePluginsAssembly.GetTypes().Where(t => t.GetCustomAttributes(typeof(AgentPluginAttribute), false).Length > 0);
@@ -38,68 +38,73 @@ namespace AgentCore.PluginManagement
             {
                 Logger.LogInfo($"Loading plugin: {pluginType.Name}");
 
-                IAgentPlugin plugin = (IAgentPlugin)Activator.CreateInstance(pluginType, context);
+                IPlugin plugin = (IPlugin)Activator.CreateInstance(pluginType, context);
                 if (plugin.Load())
                 {
                     LoadedPlugins.Add(pluginType.Name, plugin);
                 }
             }
         }
+
+        public void LoadPlugin()
+        {
+            // Load a plugin from a file
+            throw new NotImplementedException();
+        }
+
+        public void UnloadPlugin()
+        {
+            // Unload a plugin
+            throw new NotImplementedException();
+        }
+
+        public void StartPlugin()
+        {
+            // Start a specific plugin
+            throw new NotImplementedException();
+        }
+
+        public void StopPlugin()
+        {
+            // Stop a specific plugin
+            throw new NotImplementedException();
+        }
     
-        public void StopAll()
+        public void StopAllPlugins()
         {
             // Stop all plugins
             throw new NotImplementedException();
         }
 
-        public void HandlePluginTask(PluginTask task)
+        public void HandlePluginJob(Job job)
         {
-            // Check if the plugin is loaded
-            if (!LoadedPlugins.ContainsKey(task.PluginName))
+            try
             {
-                Logger.LogWarning($"Plugin {task.PluginName} is not loaded!");
-
-                // TODO: Send a message to the server?
-                return;
-            }
-
-            // Get the plugin
-            IAgentPlugin plugin = LoadedPlugins[task.PluginName];
-
-            // Check if the plugin is a long running plugin
-            if (plugin is ILongRunningAgentPlugin longRunningPlugin)
+                _handlePluginJob(job);
+            } 
+            catch (Exception ex)
             {
-                // Handle long running plugin
-                HandleLongRunningPlugin(longRunningPlugin, task);
-            }
-            // Check if the plugin is a one-time execution plugin
-            else if (plugin is IOneTimeAgentPlugin oneTimePlugin)
-            {
-                // Handle one-time plugin
-                HandleOneTimePlugin(oneTimePlugin, task);
-            }
-            else
-            {
-                Logger.LogWarning($"Plugin {task.PluginName} does not implement a recognized plugin interface!");
+                Logger.LogError($"Failed to handle plugin job", ex);
             }
         }
 
-        private void HandleLongRunningPlugin(ILongRunningAgentPlugin plugin, PluginTask task)
+        /// <summary>
+        /// Not a safe method to call directly, as it does not catch exceptions
+        /// </summary>
+        /// <param name="job"></param>
+        private void _handlePluginJob(Job job)
         {
-            if (task.OperationType == PluginOperationType.Stop)
-            {
-                // Implement handling of stopping long running plugins
-                plugin.Stop();
-                return;
-            }
-            // Implement handling of long running plugins
-            plugin.Start(task.);
+            Logger.LogDebug($"Handling plugin job: {job.Details}");
         }
 
-        private void HandleOneTimePlugin(IOneTimeAgentPlugin plugin, PluginTask task)
+        public void Start()
         {
-            // Implement handling of one-time execution plugins
-            plugin.Execute(task.Arguments);
+            throw new NotImplementedException();
+        }
+
+        public void Stop()
+        {
+            throw new NotImplementedException();
         }
     }
 }

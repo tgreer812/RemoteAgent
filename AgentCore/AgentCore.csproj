@@ -7,8 +7,8 @@
     <ProjectGuid>{38D0B4C4-F6E8-4D51-82F6-209A02CAD1A1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Core</RootNamespace>
-    <AssemblyName>Core</AssemblyName>
+    <RootNamespace>AgentCore</RootNamespace>
+    <AssemblyName>AgentCore</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -73,15 +73,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommunicationManagement\AgentMessage.cs" />
+    <Compile Include="CommunicationManagement\CommunicationManager.cs" />
     <Compile Include="CommunicationManagement\ICommunicationManager.cs" />
+    <Compile Include="CommunicationManagement\IMessageDeserializer.cs" />
+    <Compile Include="CommunicationManagement\JsonMessageDeserializer.cs" />
     <Compile Include="CommunicationManagement\ServerResponse.cs" />
-    <Compile Include="TaskManagement\CoreTask.cs" />
+    <Compile Include="EventManagement\EventDispatcher.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="EventManagement\IEventDispatcher.cs" />
+    <Compile Include="ICoreService.cs" />
+    <Compile Include="JobManagement\IJobConverter.cs" />
+    <Compile Include="JobManagement\IJobManager.cs" />
+    <Compile Include="JobManagement\Job.cs" />
+    <Compile Include="JobManagement\JobConverter.cs" />
+    <Compile Include="JobManagement\JobTypes.cs" />
+    <Compile Include="PluginManagement\IPluginManager.cs" />
     <Compile Include="PluginManagement\PluginManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TaskManagement\ITask.cs" />
-    <Compile Include="TaskManagement\PluginTask.cs" />
-    <Compile Include="TaskManagement\TaskManager.cs" />
+    <Compile Include="JobManagement\JobManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgentCommon\AgentCommon.csproj">

@@ -9,19 +9,19 @@ using AgentCommon.AgentPluginCommon;
 namespace CorePlugins.GetFilePlugin
 {
     [AgentPlugin("GetFilePlugin")]
-    internal class GetFilePlugin : PluginBase, IOneTimeAgentPlugin
+    internal class GetFilePlugin : PluginBase
     {
-        public GetFilePlugin(AgentPluginContext context) : base(context)
+        public GetFilePlugin(PluginContext context) : base(context)
         {
         }
 
-        public override bool Load(AgentPluginArguments agentPluginArguments = null)
+        public override bool Load(PluginArguments agentPluginArguments = null)
         {
             Logger.LogInfo("GetFilePlugin loaded");
             return true;
         }
 
-        public void Execute(AgentPluginArguments args = null)
+        public void Execute(PluginArguments args = null)
         {
             throw new NotImplementedException();
         }

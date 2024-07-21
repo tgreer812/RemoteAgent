@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace AgentCommon.AgentPluginCommon
 {
-    public class AgentPluginArguments : Dictionary<string, object>
+    public class PluginArguments : Dictionary<string, object>
     {
-        public AgentPluginArguments() : base()
+        public PluginArguments() : base()
         {
         }
 
-        public AgentPluginArguments(IDictionary<string, object> dictionary) : base(dictionary)
+        public PluginArguments(IDictionary<string, object> dictionary) : base(dictionary)
         {
         }
 

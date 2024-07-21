@@ -9,19 +9,19 @@ using AgentCommon.AgentPluginCommon;
 namespace CorePlugins.DirectoryListPlugin
 {
     [AgentPlugin("DirectoryListPlugin")]
-    internal class DirectoryListPlugin : PluginBase, IOneTimeAgentPlugin
+    internal class DirectoryListPlugin : PluginBase
     {
-        public DirectoryListPlugin(AgentPluginContext context) : base(context)
+        public DirectoryListPlugin(PluginContext context) : base(context)
         {
         }   
 
-        public override bool Load(AgentPluginArguments agentPluginArguments = null)
+        public override bool Load(PluginArguments agentPluginArguments = null)
         {
             Logger.LogInfo("DirectoryListPlugin loaded");
             return true;
         }
 
-        public void Execute(AgentPluginArguments args = null)
+        public void Execute(PluginArguments args = null)
         {
             throw new NotImplementedException();
         }

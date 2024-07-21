@@ -41,13 +41,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AgentPluginCommon\AgentPluginArguments.cs" />
+    <Compile Include="AgentPluginCommon\PluginArguments.cs" />
     <Compile Include="AgentPluginCommon\AgentPluginAttribute.cs" />
-    <Compile Include="AgentPluginCommon\ILongRunningAgentPlugin.cs" />
-    <Compile Include="AgentPluginCommon\IOneTimeAgentPlugin.cs" />
-    <Compile Include="AgentPluginCommon\AgentPluginContext.cs" />
+    <Compile Include="AgentPluginCommon\PluginContext.cs" />
     <Compile Include="ConsoleLogger.cs" />
-    <Compile Include="AgentPluginCommon\IAgentPlugin.cs" />
+    <Compile Include="AgentPluginCommon\IPlugin.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
