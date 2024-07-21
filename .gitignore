@@ -1,0 +1,142 @@
+# Ignore all files with .exe, .dll, .cache extensions
+*.exe
+*.dll
+*.cache
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.dtbcache.json
+
+# User-specific folders
+.vscode/
+.vscode/*
+
+# Mono auto generated files
+mono_crash.*
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# VS Code directories
+.vscode/
+
+# Rider directories
+.idea/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# VS 2019 auto generated assets
+.vs/*
+.vscode/
+
+# Packages
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+# except build/, which is used as an MSBuild target.
+!**/packages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/packages/repositories.config
+
+# Microsoft Azure Build Output
+csx/
+*.build.csdef
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Chutzpah Test files
+_Chutzpah*
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by popular Visual Studio add-ons
+*.tsscache
+*.tss
+*.user
+*.swp
+*.wsp
+
+# VSS database files
+*.vssscc
+*.vssscc.shared
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Build Results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Web publish folder
+.publish/
+
+# Publish Web Output
+wwwroot/
+
+# Node.js directories
+node_modules/
+bower_components/
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Azure Web Apps settings
+appsettings.json
+appsettings.Development.json
+
+# Lokalise translation cache
+.lokalise/
+
+# Windows Installer files
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
