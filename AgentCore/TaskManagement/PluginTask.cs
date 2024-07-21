@@ -19,15 +19,5 @@ namespace AgentCore.TaskManagement
         {
 
         }
-
-        public TaskType TaskType()
-        {
-            throw new NotImplementedException();
-        }
-
-        TaskType ITask.TaskType()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

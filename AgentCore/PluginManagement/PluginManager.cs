@@ -93,7 +93,7 @@ namespace AgentCore.PluginManagement
                 return;
             }
             // Implement handling of long running plugins
-            plugin.Start(task.Arguments);
+            plugin.Start(task.);
         }
 
         private void HandleOneTimePlugin(IOneTimeAgentPlugin plugin, PluginTask task)
