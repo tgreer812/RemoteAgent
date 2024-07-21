@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentCore", "Core\AgentCore.csproj", "{38D0B4C4-F6E8-4D51-82F6-209A02CAD1A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentCore", "AgentCore\AgentCore.csproj", "{38D0B4C4-F6E8-4D51-82F6-209A02CAD1A1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreTest", "ConsoleStart\CoreTest.csproj", "{50F2FB78-0BDE-4F5E-A16C-74CA6BDE434E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentCommon", "Common\AgentCommon.csproj", "{5461D9EA-4ABE-47C5-9654-CB90D315DC39}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentCommon", "AgentCommon\AgentCommon.csproj", "{5461D9EA-4ABE-47C5-9654-CB90D315DC39}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorePlugins", "CorePlugins\CorePlugins.csproj", "{F73DE89C-C79D-45C3-8CA8-5E90485863D7}"
 EndProject
