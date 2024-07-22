@@ -72,11 +72,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommunicationManagement\AgentMessage.cs" />
+    <Compile Include="CommunicationManagement\ServerRequest.cs" />
     <Compile Include="CommunicationManagement\CommunicationManager.cs" />
     <Compile Include="CommunicationManagement\ICommunicationManager.cs" />
-    <Compile Include="CommunicationManagement\IMessageDeserializer.cs" />
-    <Compile Include="CommunicationManagement\JsonMessageDeserializer.cs" />
+    <Compile Include="CommunicationManagement\IMessageSerializer.cs" />
+    <Compile Include="CommunicationManagement\JsonMessageSerializer.cs" />
     <Compile Include="CommunicationManagement\ServerResponse.cs" />
     <Compile Include="CoreBuilder.cs" />
     <Compile Include="EventManagement\EventDispatcher.cs" />

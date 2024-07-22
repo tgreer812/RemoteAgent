@@ -32,6 +32,7 @@ namespace AgentCore.PluginManagement
             }
 
             IsRunning = true;
+            LoadCorePlugins();
 
             while (IsRunning)
             {

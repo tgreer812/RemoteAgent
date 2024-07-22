@@ -8,12 +8,24 @@ using Newtonsoft.Json;
 
 namespace AgentCore.CommunicationManagement
 {
-    public class JsonMessageDeserializer : IMessageDeserializer
+    public class JsonMessageSerializer : IMessageSerializer
     {
         private ILogger Logger { get; set; }
-        public JsonMessageDeserializer(ILogger logger)
+        public JsonMessageSerializer(ILogger logger)
         {
             Logger = logger;
+        }
+
+        public string Serialize(ServerRequest request)
+        {
+            try
+            {
+                return JsonConvert.SerializeObject(request);
+            } catch (Exception e)
+            {
+                Logger.LogError("Failed to serialize request", e);
+                return null;
+            }
         }
         public ServerResponse Deserialize(string message)
         {

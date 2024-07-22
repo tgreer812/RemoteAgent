@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.CommunicationManagement
 {
-    internal class AgentMessage
+    public class ServerRequest
     {
     }
 }
