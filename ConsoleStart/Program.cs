@@ -13,7 +13,11 @@ namespace CoreTest
         static void Main(string[] args)
         {
             ConsoleLogger logger = new ConsoleLogger();
-            AgentCore.Core.Run(logger);
+            var core = new AgentCore.Core.CoreBuilder()
+                .SetLogger(logger)
+                .Build();
+
+            core.Run();
         }
     }
 }

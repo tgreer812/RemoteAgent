@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace AgentCore.PluginManagement
 {
-    internal interface IPluginManager : ICoreService
+    public interface IPluginManager : ICoreService
     {
         void LoadPlugin();
         
         void LoadCorePlugins();
         
-        void StopPlugin();
+        Task StopPlugin();
         
-        void StopAllPlugins();
+        Task<bool> StopAllPlugins();
 
         void StartPlugin();
     }

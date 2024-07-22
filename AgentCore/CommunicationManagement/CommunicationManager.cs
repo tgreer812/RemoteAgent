@@ -8,12 +8,12 @@ namespace AgentCore.CommunicationManagement
 {
     internal class CommunicationManager : ICommunicationManager
     {
-        public void Start()
+        public async Task Start()
         {
             throw new NotImplementedException();
         }
 
-        public void Stop()
+        public async Task<bool> Stop()
         {
             throw new NotImplementedException();
         }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.EventManagement
 {
-    public class EventDispatcher : ICoreService
+    public class EventDispatcher : IEventDispatcher
     {
         // Define a delegate for event handlers
         public delegate void EventHandler(object sender, EventArgs e);
@@ -20,14 +20,31 @@ namespace AgentCore.EventManagement
             Logger = logger;
         }
 
-        public void Start()
+        public Task Start()
         {
             Logger.LogInfo("EventDispatcher is starting...");
+
+            Logger.LogInfo("EventDispatcher started.");
+            return Task.CompletedTask;
         }
 
-        public void Stop()
+        public Task<bool> Stop()
         {
             Logger.LogInfo("EventDispatcher is stopping...");
+
+            // Unsubscribe all event handlers
+            Logger.LogDebug("Unsubscribing all event handlers...");
+            foreach (var eventName in _eventHandlers.Keys)
+            {
+                foreach (var handler in _eventHandlers[eventName])
+                {
+                    Unsubscribe(eventName, handler);
+                }
+            }
+
+            Logger.LogInfo("EventDispatcher stopped.");
+            return Task.FromResult(true);
+
         }
         
         // Method to subscribe to an event

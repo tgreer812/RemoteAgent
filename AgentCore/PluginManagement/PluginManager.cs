@@ -15,10 +15,34 @@ namespace AgentCore.PluginManagement
     {
         public ILogger Logger { get; set; }
         public Dictionary<string, IPlugin> LoadedPlugins { get; set; }
+
+        public bool IsRunning { get; set; }
         public PluginManager(ILogger logger)
         {
             Logger = logger;
             LoadedPlugins = new Dictionary<string, IPlugin>();
+        }
+
+        public async Task Start()
+        {
+            if (IsRunning)
+            {
+                Logger.LogWarning("PluginManager is already running");
+                return;
+            }
+
+            IsRunning = true;
+
+            while (IsRunning)
+            {
+                await Task.Delay(1000);
+                Logger.LogDebug("PluginManager is running...");
+            }
+        }
+
+        public async Task<bool> Stop()
+        {
+            return await this.StopAllPlugins();
         }
 
         public void LoadCorePlugins()
@@ -64,13 +88,13 @@ namespace AgentCore.PluginManagement
             throw new NotImplementedException();
         }
 
-        public void StopPlugin()
+        public async Task StopPlugin()
         {
             // Stop a specific plugin
             throw new NotImplementedException();
         }
     
-        public void StopAllPlugins()
+        public async Task<bool> StopAllPlugins()
         {
             // Stop all plugins
             throw new NotImplementedException();
@@ -97,14 +121,6 @@ namespace AgentCore.PluginManagement
             Logger.LogDebug($"Handling plugin job: {job.Details}");
         }
 
-        public void Start()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Stop()
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

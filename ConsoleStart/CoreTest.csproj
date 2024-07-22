@@ -54,13 +54,13 @@
       <Project>{5461d9ea-4abe-47c5-9654-cb90d315dc39}</Project>
       <Name>AgentCommon</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CorePlugins\CorePlugins.csproj">
-      <Project>{f73de89c-c79d-45c3-8ca8-5e90485863d7}</Project>
-      <Name>CorePlugins</Name>
-    </ProjectReference>
     <ProjectReference Include="..\AgentCore\AgentCore.csproj">
       <Project>{38d0b4c4-f6e8-4d51-82f6-209a02cad1a1}</Project>
       <Name>AgentCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CorePlugins\CorePlugins.csproj">
+      <Project>{f73de89c-c79d-45c3-8ca8-5e90485863d7}</Project>
+      <Name>CorePlugins</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

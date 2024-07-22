@@ -24,7 +24,10 @@ namespace AgentCommon
             if (exception != null)
             {
                 Log(exception.Message);
-                exception.StackTrace.Split('\n').ToList().ForEach(Log);
+                if (exception.StackTrace != null)
+                {
+                    exception.StackTrace.Split('\n').ToList().ForEach(Log);
+                }
             }
         }
 

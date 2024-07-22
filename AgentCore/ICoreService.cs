@@ -8,7 +8,7 @@ namespace AgentCore
 {
     public interface ICoreService
     {
-        void Start();
-        void Stop();
+        Task Start();
+        Task<bool> Stop();
     }
 }

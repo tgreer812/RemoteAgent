@@ -78,6 +78,7 @@
     <Compile Include="CommunicationManagement\IMessageDeserializer.cs" />
     <Compile Include="CommunicationManagement\JsonMessageDeserializer.cs" />
     <Compile Include="CommunicationManagement\ServerResponse.cs" />
+    <Compile Include="CoreBuilder.cs" />
     <Compile Include="EventManagement\EventDispatcher.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="EventManagement\IEventDispatcher.cs" />

@@ -10,27 +10,38 @@ using AgentCore.PluginManagement;
 using AgentCore.JobManagement;
 using AgentCore.EventManagement;
 using AgentCore.CommunicationManagement;
+using System.Reflection;
 
 
 namespace AgentCore
 {
-    public static class Core
+    public partial class Core
     {
-        internal static ILogger Logger { get; set; }
-        internal static bool IsRunning { get; set; }
+        internal ILogger Logger { get; set; }
+        internal bool IsRunning { get; set; }
 
-        internal static IPluginManager PluginManager { get; set; }
-        internal static IJobManager JobManager { get; set; }
-        public static IEventDispatcher EventManager { get; set; }
+        internal IPluginManager PluginManager { get; set; }
+        internal IJobManager JobManager { get; set; }
+        public IEventDispatcher EventManager { get; set; }
 
-        
-        public static void Run(ILogger logger)
+        internal ICommunicationManager CommunicationManager { get; set; }
+
+        public static Core Instance { get; private set; }
+
+        private Core() { }
+
+        public void Run()
         {
-            if (IsRunning) { logger.LogError("Core is already running!"); return; }
+            try { _run(); }
+            catch (Exception ex) { Logger.LogError(ex.Message); }
+        }
 
-            logger.LogInfo("Hello from Core!");
+        private void _run()
+        {
+            if (IsRunning) { Logger.LogError("Core is already running!"); return; }
+
+            Logger.LogInfo("Hello from Core!");
             IsRunning = true;
-            Logger = logger;
 
             StartCoreServices();
 
@@ -38,26 +49,39 @@ namespace AgentCore
             while (IsRunning)
             {
                 // sleep
-                Thread.Sleep(1000);
+                Task.Delay(1000).Wait();
                 Logger.LogDebug("Core is looping...");
             }
         }
 
-        private static void StartCoreServices()
+        private void StartCoreServices()
         {
             Logger.LogInfo("Starting Core services...");
 
             // Loop through this assembly and find all properties in this class that are of type ICoreService
-            var coreServices = typeof(Core).GetProperties()
-                .Where(p => p.PropertyType.GetInterfaces().Contains(typeof(ICoreService)));
+            var coreServices = GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(p => typeof(ICoreService).IsAssignableFrom(p.PropertyType));
 
             foreach (var coreService in coreServices)
             {
-                var instance = coreService.GetValue(null);
+                var instance = coreService.GetValue(this);
                 if (instance != null)
                 {
                     Logger.LogInfo($"Starting {coreService.Name}...");
-                    coreService.PropertyType.GetMethod("Start").Invoke(instance, null);
+
+                    // Launch the async Start method without awaiting it
+                    var task = ((ICoreService)instance).Start();
+                    task.ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            Logger.LogError($"Error starting {coreService.Name}", t.Exception);
+                        }
+                        else
+                        {
+                            Logger.LogInfo($"{coreService.Name} started successfully.");
+                        }
+                    }, TaskScheduler.Current);
                 }
                 else
                 {
@@ -66,7 +90,8 @@ namespace AgentCore
             }
         }
 
-        public static void Stop()
+
+        public void Stop()
         {
             if (!IsRunning) { Logger.LogError("Core is not running!"); return; }
 
@@ -75,12 +100,22 @@ namespace AgentCore
             // Stop all plugins
             PluginManager.StopAllPlugins();
 
-            // TODO: Stop all core services
-            
+            // Stop all core services
+            var coreServices = GetType().GetProperties()
+                .Where(p => p.PropertyType.GetInterfaces().Contains(typeof(ICoreService)));
+
+            foreach (var coreService in coreServices)
+            {
+                var instance = coreService.GetValue(this);
+                if (instance != null)
+                {
+                    coreService.PropertyType.GetMethod("Stop").Invoke(instance, null);
+                }
+            }
+
             // Tell the core to stop running
             IsRunning = false;
         }
-
-        private static ILogger _logger = new ConsoleLogger();
     }
 }
+
