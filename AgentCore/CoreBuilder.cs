@@ -64,7 +64,7 @@ namespace AgentCore
                     PluginManager = _pluginManager ?? new PluginManager(_logger),
                     JobManager = _jobManager ?? new JobManager(_logger, null),
                     EventManager = _eventManager ?? new EventDispatcher(_logger),
-                    CommunicationManager = _communicationManager ?? new CommunicationManager()
+                    CommunicationManager = _communicationManager ?? new CommunicationManager(_logger)
                 };
 
                 return Core.Instance;
