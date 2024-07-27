@@ -8,5 +8,6 @@ namespace AgentCore.JobManagement
 {
     internal interface IJobConverter
     {
+        Job Convert(object jobData);
     }
 }

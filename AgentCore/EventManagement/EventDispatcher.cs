@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 namespace AgentCore.EventManagement
 {
     [LoadPriority(1)]
-    public class EventDispatcher : IEventDispatcher
+    public class EventDispatcher : ICoreService, IEventDispatcher
     {
         // Define a delegate for event handlers
-        public delegate void EventHandler(object sender, EventArgs e);
+        //public delegate void EventHandler(object sender, EventArgs e);
 
         // Dictionary to hold events and their subscribers
         private readonly Dictionary<string, List<EventHandler>> _eventHandlers = new Dictionary<string, List<EventHandler>>();

@@ -6,7 +6,12 @@ using System.Threading.Tasks;
 
 namespace AgentCore.EventManagement
 {
-    public interface IEventDispatcher : ICoreService
+    public interface IEventDispatcher
     {
+        void Subscribe(string eventName, EventHandler handler);
+
+        void Unsubscribe(string eventName, EventHandler handler);
+
+        void Publish(string eventName, object sender, EventArgs e);
     }
 }

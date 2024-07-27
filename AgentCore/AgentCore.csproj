@@ -79,6 +79,7 @@
     <Compile Include="CommunicationManagement\JsonMessageSerializer.cs" />
     <Compile Include="CommunicationManagement\ServerResponse.cs" />
     <Compile Include="CoreBuilder.cs" />
+    <Compile Include="CoreFactory.cs" />
     <Compile Include="EventManagement\EventDispatcher.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="EventManagement\IEventDispatcher.cs" />

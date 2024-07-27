@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore
 {
-    public interface ICoreService
+    internal interface ICoreService
     {
         Task Start();
         Task<bool> Stop();

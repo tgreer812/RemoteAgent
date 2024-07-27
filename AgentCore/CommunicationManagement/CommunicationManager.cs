@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.CommunicationManagement
 {
-    public class CommunicationManager : ICommunicationManager
+    public class CommunicationManager : ICoreService, ICommunicationManager
     {
         internal bool IsRunning { get; private set; }
         private ILogger Logger { get; set; }
@@ -30,6 +30,9 @@ namespace AgentCore.CommunicationManagement
             {
                 Logger.LogDebug("Communication manager is running");
                 await Task.Delay(1000);
+
+                // TODO: delete this
+                //Core.GetEventDispatcher().Publish("JobAdded", this, new EventArgs());
             }
         }
 

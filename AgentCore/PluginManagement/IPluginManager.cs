@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.PluginManagement
 {
-    public interface IPluginManager : ICoreService
+    internal interface IPluginManager
     {
         void LoadPlugin();
         

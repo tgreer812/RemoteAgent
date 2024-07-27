@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.CommunicationManagement
 {
-    public interface ICommunicationManager : ICoreService
+    public interface ICommunicationManager
     {
 
     }

@@ -12,12 +12,9 @@ namespace CoreTest
     {
         static void Main(string[] args)
         {
-            ConsoleLogger logger = new ConsoleLogger();
-            var core = new AgentCore.Core.CoreBuilder()
-                .SetLogger(logger)
-                .Build();
+            // Use CoreFactory to create an instance of Core
+            CoreFactory.CreateCore();
 
-            core.Run();
         }
     }
 }

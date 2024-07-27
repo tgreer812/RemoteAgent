@@ -13,7 +13,7 @@ namespace AgentCore
 {
     public partial class Core
     {
-        public class CoreBuilder
+        internal class CoreBuilder
         {
             private ILogger _logger;
             private IPluginManager _pluginManager;
@@ -21,48 +21,53 @@ namespace AgentCore
             private IEventDispatcher _eventManager;
             private ICommunicationManager _communicationManager;
 
-            public CoreBuilder SetLogger(ILogger logger)
+            internal CoreBuilder SetLogger(ILogger logger)
             {
                 _logger = logger;
                 return this;
             }
 
-            public CoreBuilder SetPluginManager(IPluginManager pluginManager)
+            internal CoreBuilder SetPluginManager(IPluginManager pluginManager)
             {
                 _pluginManager = pluginManager;
                 return this;
             }
 
-            public CoreBuilder SetJobManager(IJobManager jobManager)
+            internal CoreBuilder SetJobManager(IJobManager jobManager)
             {
                 _jobManager = jobManager;
                 return this;
             }
 
-            public CoreBuilder SetEventManager(IEventDispatcher eventManager)
+            internal CoreBuilder SetEventManager(IEventDispatcher eventManager)
             {
                 _eventManager = eventManager;
                 return this;
             }
 
-            public CoreBuilder SetCommunicationManager(ICommunicationManager communicationManager)
+            internal CoreBuilder SetCommunicationManager(ICommunicationManager communicationManager)
             {
                 _communicationManager = communicationManager;
                 return this;
             }
 
-            public Core Build()
+            internal Core Build()
             {
                 if (Core.Instance != null)
                 {
                     throw new InvalidOperationException("Core instance already exists!");
                 }
 
+                if ( _logger == null)
+                {
+                    _logger = new ConsoleLogger();
+                }
+
                 Core.Instance = new Core
                 {
-                    Logger = _logger ?? new ConsoleLogger(),
+                    Logger = _logger,
                     PluginManager = _pluginManager ?? new PluginManager(_logger),
-                    JobManager = _jobManager ?? new JobManager(_logger, null),
+                    JobManager = _jobManager ?? new JobManager(_logger),
                     EventManager = _eventManager ?? new EventDispatcher(_logger),
                     CommunicationManager = _communicationManager ?? new CommunicationManager(_logger)
                 };

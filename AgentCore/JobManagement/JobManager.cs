@@ -13,17 +13,24 @@ namespace AgentCore.JobManagement
         PluginTask
     }
 
-    internal class JobManager : IJobManager
+    internal class JobManager : ICoreService, IJobManager
     {
         private readonly Queue<Job> _jobs = new Queue<Job>();
         private readonly IJobConverter _jobConverter;
         private ILogger Logger { get; set; }
 
         public bool IsRunning { get; set; }
-        internal JobManager(ILogger logger, IJobConverter jobConverter)
+        internal JobManager(ILogger logger)
         {
             Logger = logger;    
-            _jobConverter = jobConverter;
+            _jobConverter = new JobConverter();
+        }
+
+        private void OnJobAdded(object sender, EventArgs e)
+        {
+            Logger.LogDebug("Job added event received");
+            Job job = _jobConverter.Convert(e);
+            AddJob(job);
         }
 
         public async Task Start()
@@ -31,6 +38,10 @@ namespace AgentCore.JobManagement
             if (IsRunning) { Logger.LogError("JobManager is already running!"); return; }
             
             Logger.LogInfo("JobManager is starting...");
+
+            // Subscribe to job events
+            Core.GetEventDispatcher().Subscribe("JobAdded", OnJobAdded);
+
             int i = 0;
 
             IsRunning = true;

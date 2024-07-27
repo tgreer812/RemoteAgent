@@ -22,7 +22,7 @@ namespace AgentCore
 
         internal IPluginManager PluginManager { get; set; }
         internal IJobManager JobManager { get; set; }
-        public IEventDispatcher EventManager { get; set; }
+        private IEventDispatcher EventManager { get; set; }
 
         internal ICommunicationManager CommunicationManager { get; set; }
 
@@ -59,18 +59,18 @@ namespace AgentCore
             Logger.LogInfo("Starting Core services...");
 
             // Loop through this assembly and find all properties in this class that are of type ICoreService
-            // Load them in order of their LoadPriority attribute (higher number = higher priority)
             var coreServices = GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(p => typeof(ICoreService).IsAssignableFrom(p.PropertyType))
-                .OrderByDescending(p => p.GetValue(this)?.GetType().GetCustomAttribute<LoadPriorityAttribute>()?.LoadPriority ?? 0)
+                .Select(p => p.GetValue(this))
+                .Where(instance => instance != null && typeof(ICoreService).IsAssignableFrom(instance.GetType()))
+                .OrderByDescending(instance => instance.GetType().GetCustomAttribute<LoadPriorityAttribute>()?.LoadPriority ?? 0)
+                .Cast<ICoreService>()
                 .ToList();
 
-            foreach (var coreServiceProperty in coreServices)
+            foreach (var coreServiceInstance in coreServices)
             {
-                var coreServiceInstance = coreServiceProperty.GetValue(this) as ICoreService;
                 if (coreServiceInstance != null)
                 {
-                    Logger.LogInfo($"Starting {coreServiceProperty.Name}...");
+                    Logger.LogInfo($"Starting {coreServiceInstance.GetType().Name}...");
 
                     // Launch the async Start method without awaiting it
                     var task = coreServiceInstance.Start();
@@ -78,20 +78,21 @@ namespace AgentCore
                     {
                         if (t.IsFaulted)
                         {
-                            Logger.LogError($"Error starting {coreServiceProperty.Name}", t.Exception);
+                            Logger.LogError($"Error starting {coreServiceInstance.GetType().Name}", t.Exception);
                         }
                         else
                         {
-                            Logger.LogInfo($"{coreServiceProperty.Name} started successfully.");
+                            Logger.LogInfo($"{coreServiceInstance.GetType().Name} started successfully.");
                         }
                     }, TaskScheduler.Current);
                 }
                 else
                 {
-                    Logger.LogWarning($"Instance for {coreServiceProperty.Name} is not initialized.");
+                    Logger.LogWarning($"Instance for {coreServiceInstance.GetType().Name} is not initialized.");
                 }
             }
         }
+
 
         public void Stop()
         {
@@ -118,6 +119,13 @@ namespace AgentCore
             // Tell the core to stop running
             IsRunning = false;
         }
+    
+        public static IEventDispatcher GetEventDispatcher()
+        {
+            return Core.Instance.EventManager;
+        }
+    
+    
     }
 }
 

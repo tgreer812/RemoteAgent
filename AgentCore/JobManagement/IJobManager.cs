@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.JobManagement
 {
-    public interface IJobManager : ICoreService
+    public interface IJobManager
     {
     }
 }

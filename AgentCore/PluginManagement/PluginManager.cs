@@ -11,7 +11,7 @@ using AgentCore.JobManagement;
 
 namespace AgentCore.PluginManagement
 {
-    internal class PluginManager : IPluginManager
+    internal class PluginManager : ICoreService, IPluginManager
     {
         public ILogger Logger { get; set; }
         public Dictionary<string, IPlugin> LoadedPlugins { get; set; }
