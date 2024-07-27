@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.EventManagement
 {
+    [LoadPriority(1)]
     public class EventDispatcher : IEventDispatcher
     {
         // Define a delegate for event handlers

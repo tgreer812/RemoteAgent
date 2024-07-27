@@ -21,7 +21,7 @@ namespace CorePlugins.GetFilePlugin
             return true;
         }
 
-        public void Execute(PluginArguments args = null)
+        public override bool Start(PluginArguments args = null)
         {
             throw new NotImplementedException();
         }

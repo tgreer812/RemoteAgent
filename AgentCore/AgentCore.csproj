@@ -88,6 +88,7 @@
     <Compile Include="JobManagement\Job.cs" />
     <Compile Include="JobManagement\JobConverter.cs" />
     <Compile Include="JobManagement\JobTypes.cs" />
+    <Compile Include="LoadPriorityAttribute.cs" />
     <Compile Include="PluginManagement\IPluginManager.cs" />
     <Compile Include="PluginManagement\PluginManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

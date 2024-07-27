@@ -59,37 +59,39 @@ namespace AgentCore
             Logger.LogInfo("Starting Core services...");
 
             // Loop through this assembly and find all properties in this class that are of type ICoreService
+            // Load them in order of their LoadPriority attribute (higher number = higher priority)
             var coreServices = GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(p => typeof(ICoreService).IsAssignableFrom(p.PropertyType));
+                .Where(p => typeof(ICoreService).IsAssignableFrom(p.PropertyType))
+                .OrderByDescending(p => p.GetValue(this)?.GetType().GetCustomAttribute<LoadPriorityAttribute>()?.LoadPriority ?? 0)
+                .ToList();
 
-            foreach (var coreService in coreServices)
+            foreach (var coreServiceProperty in coreServices)
             {
-                var instance = coreService.GetValue(this);
-                if (instance != null)
+                var coreServiceInstance = coreServiceProperty.GetValue(this) as ICoreService;
+                if (coreServiceInstance != null)
                 {
-                    Logger.LogInfo($"Starting {coreService.Name}...");
+                    Logger.LogInfo($"Starting {coreServiceProperty.Name}...");
 
                     // Launch the async Start method without awaiting it
-                    var task = ((ICoreService)instance).Start();
+                    var task = coreServiceInstance.Start();
                     task.ContinueWith(t =>
                     {
                         if (t.IsFaulted)
                         {
-                            Logger.LogError($"Error starting {coreService.Name}", t.Exception);
+                            Logger.LogError($"Error starting {coreServiceProperty.Name}", t.Exception);
                         }
                         else
                         {
-                            Logger.LogInfo($"{coreService.Name} started successfully.");
+                            Logger.LogInfo($"{coreServiceProperty.Name} started successfully.");
                         }
                     }, TaskScheduler.Current);
                 }
                 else
                 {
-                    Logger.LogWarning($"Instance for {coreService.Name} is not initialized.");
+                    Logger.LogWarning($"Instance for {coreServiceProperty.Name} is not initialized.");
                 }
             }
         }
-
 
         public void Stop()
         {
