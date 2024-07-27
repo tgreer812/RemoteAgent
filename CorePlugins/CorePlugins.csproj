@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DirectoryListPlugin\DirectoryListArguments.cs" />
     <Compile Include="DirectoryListPlugin\DirectoryListPlugin.cs" />
     <Compile Include="GetFilePlugin\GetFilePlugin.cs" />
     <Compile Include="PluginBase.cs" />

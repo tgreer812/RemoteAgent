@@ -31,13 +31,27 @@ namespace AgentCore.JobManagement
             if (IsRunning) { Logger.LogError("JobManager is already running!"); return; }
             
             Logger.LogInfo("JobManager is starting...");
+            int i = 0;
 
             IsRunning = true;
             while (IsRunning)
             {
+                if ((i % 5 == 0) && i != 0)
+                {
+                    Logger.LogInfo("Adding mock job");
+
+                    Dictionary<string, object> jobData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                    jobData.Add("pluginName", "DirectoryListPlugin");
+                    jobData.Add("pluginArguments", new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase) { { "path", "C:\\" } });
+                    
+                    Job job = new Job("PluginJob",jobData);
+                    this.AddJob(job);
+                    
+                }
                 Logger.LogDebug("JobManager is running...");
                 await Task.Delay(1000);
                 this.ProcessJobs();
+                i++;
             }
             
         }
@@ -68,6 +82,17 @@ namespace AgentCore.JobManagement
             }
         }
 
+        /*
+        {
+        "jobType": "PluginJob",
+        "jobData": {
+            "pluginName": "DirectoryListPlugin",
+            "arguments": {
+                "path": "C:\\"
+            }
+        }
+         
+         */
         private void HandleJob(Job job)
         {
             switch (job.JobType)
@@ -77,7 +102,7 @@ namespace AgentCore.JobManagement
                     throw new NotImplementedException();
                 case JobTypes.PluginJobType:
                     // TODO: parse job data and start plugin
-                    Core.Instance.PluginManager.StartPlugin();
+                    Core.Instance.PluginManager.StartPlugin(job.JobData);
                     break;
                 default:
                     throw new Exception("Unknown task type");

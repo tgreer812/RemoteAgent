@@ -83,10 +83,28 @@ namespace AgentCore.PluginManagement
             throw new NotImplementedException();
         }
 
-        public void StartPlugin()
+        /*
+         "pluginName": "DirectoryListPlugin",
+            "pluginArguments": {
+                "path": "C:\\"
+            }
+         */
+        public void StartPlugin(IDictionary<string, object> args)
         {
-            // Start a specific plugin
-            throw new NotImplementedException();
+            string pluginName = args["pluginName"].ToString();
+            IDictionary<string, object> pluginArgsDict = (IDictionary<string, object>)args["pluginArguments"];
+
+            // Check if the plugin is loaded
+            if (!LoadedPlugins.ContainsKey(pluginName))
+            {
+                Logger.LogError($"Plugin {pluginName} is not loaded");
+                return;
+            }
+
+            PluginArguments pluginArgs = new PluginArguments(pluginArgsDict);
+
+            IPlugin plugin = LoadedPlugins[pluginName];
+            plugin.Start(pluginArgs);
         }
 
         public async Task StopPlugin()
@@ -119,7 +137,7 @@ namespace AgentCore.PluginManagement
         /// <param name="job"></param>
         private void _handlePluginJob(Job job)
         {
-            Logger.LogDebug($"Handling plugin job: {job.Details}");
+            Logger.LogDebug($"Handling plugin job: {job.JobData}");
         }
 
         

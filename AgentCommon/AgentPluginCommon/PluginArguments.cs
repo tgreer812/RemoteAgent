@@ -5,11 +5,11 @@ namespace AgentCommon.AgentPluginCommon
 {
     public class PluginArguments : Dictionary<string, object>
     {
-        public PluginArguments() : base()
+        public PluginArguments() : base(StringComparer.OrdinalIgnoreCase)
         {
         }
 
-        public PluginArguments(IDictionary<string, object> dictionary) : base(dictionary)
+        public PluginArguments(IDictionary<string, object> dictionary) : base(dictionary, StringComparer.OrdinalIgnoreCase)
         {
         }
 

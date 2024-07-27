@@ -16,6 +16,6 @@ namespace AgentCore.PluginManagement
         
         Task<bool> StopAllPlugins();
 
-        void StartPlugin();
+        void StartPlugin(IDictionary<string, object> args);
     }
 }
