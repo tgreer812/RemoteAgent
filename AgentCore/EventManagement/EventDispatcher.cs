@@ -91,5 +91,15 @@ namespace AgentCore.EventManagement
                 }
             }
         }
+
+        public class JsonEventArgs : EventArgs
+        {
+            public string JsonData { get; set; }
+
+            public JsonEventArgs(string jsonData)
+            {
+                JsonData = jsonData;
+            }
+        }
     }
 }

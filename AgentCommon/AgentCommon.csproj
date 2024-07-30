@@ -47,6 +47,8 @@
     <Compile Include="ConsoleLogger.cs" />
     <Compile Include="AgentPluginCommon\IPlugin.cs" />
     <Compile Include="ILogger.cs" />
+    <Compile Include="IServerRequest.cs" />
+    <Compile Include="IServerResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

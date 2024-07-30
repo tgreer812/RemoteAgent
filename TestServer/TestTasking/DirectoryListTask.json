@@ -1,0 +1,9 @@
+{
+    "jobType": "PluginJob",
+    "jobData": {
+        "pluginName": "DirectoryListPlugin",
+        "pluginArguments": {
+            "path": "C:\\"
+        }
+    }
+}

@@ -28,8 +28,12 @@ namespace AgentCore.JobManagement
 
         private void OnJobAdded(object sender, EventArgs e)
         {
+            if (sender == null || e == null) { throw new ArgumentNullException(); }
+
             Logger.LogDebug("Job added event received");
             Job job = _jobConverter.Convert(e);
+
+            Logger.LogDebug("Adding job to queue...");
             AddJob(job);
         }
 
@@ -47,24 +51,11 @@ namespace AgentCore.JobManagement
             IsRunning = true;
             while (IsRunning)
             {
-                if ((i % 5 == 0) && i != 0)
-                {
-                    Logger.LogInfo("Adding mock job");
-
-                    Dictionary<string, object> jobData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                    jobData.Add("pluginName", "DirectoryListPlugin");
-                    jobData.Add("pluginArguments", new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase) { { "path", "C:\\" } });
-                    
-                    Job job = new Job("PluginJob",jobData);
-                    this.AddJob(job);
-                    
-                }
                 Logger.LogDebug("JobManager is running...");
                 await Task.Delay(1000);
                 this.ProcessJobs();
                 i++;
             }
-            
         }
 
         public Task<bool> Stop()
@@ -86,6 +77,7 @@ namespace AgentCore.JobManagement
         internal void ProcessJobs()
         {
             Logger.LogDebug("Processing jobs...");
+            Logger.LogDebug($"Jobs in queue: {_jobs.Count}");
             while (_jobs.Count > 0)
             {
                 var job = _jobs.Dequeue();
@@ -93,17 +85,6 @@ namespace AgentCore.JobManagement
             }
         }
 
-        /*
-        {
-        "jobType": "PluginJob",
-        "jobData": {
-            "pluginName": "DirectoryListPlugin",
-            "arguments": {
-                "path": "C:\\"
-            }
-        }
-         
-         */
         private void HandleJob(Job job)
         {
             switch (job.JobType)
