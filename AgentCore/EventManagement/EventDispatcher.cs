@@ -92,6 +92,9 @@ namespace AgentCore.EventManagement
             }
         }
 
+        /// <summary>
+        /// A custom EventArgs class for JSON events
+        /// </summary>
         public class JsonEventArgs : EventArgs
         {
             public string JsonData { get; set; }

@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
+using Newtonsoft.Json;
 using AgentCore.EventManagement;
 using static AgentCore.EventManagement.EventDispatcher;
+using Newtonsoft.Json.Linq;
 
 namespace AgentCore.JobManagement
 {
     internal class JobConverter : IJobConverter
     {
-        public Job Convert(object jobData)
+        public Job Convert(object jobEventArgs)
         {
             // Try to convert
-            EventArgs args = jobData as EventArgs;
+            EventArgs args = jobEventArgs as EventArgs;
 
             if (args == null)
             {
@@ -19,26 +20,27 @@ namespace AgentCore.JobManagement
             }
 
             // Assuming the EventArgs contains a property with the JSON string
-            string json = ExtractJsonFromEventArgs(args);
+            string jsonString = ExtractJsonFromEventArgs(args);
 
-            if (string.IsNullOrEmpty(json))
+            if (string.IsNullOrEmpty(jsonString))
             {
                 throw new ArgumentException("EventArgs does not contain valid JSON data");
             }
 
-            // Deserialize the JSON string to a dictionary
-            Dictionary<string, object> jobDict = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            // Deserialize the JSON string to JObjects
+            var jsonObject = JObject.Parse(jsonString);
 
-            if (!jobDict.ContainsKey("jobType") || !jobDict.ContainsKey("jobData"))
+            if (!jsonObject.ContainsKey("jobType") || !jsonObject.ContainsKey("jobData"))
             {
                 throw new ArgumentException("JSON data does not contain required fields: jobType and jobData");
             }
 
-            string jobType = jobDict["jobType"].ToString();
-            Dictionary<string, object> jobDataDict = JsonSerializer.Deserialize<Dictionary<string, object>>(jobDict["jobData"].ToString());
+            string jobId = jsonObject["jobId"].ToString();
+            string jobType = jsonObject["jobType"].ToString();
+            JObject jobData = (JObject)jsonObject["jobData"];
 
             // Create and return the Job object
-            Job job = new Job(jobType, jobDataDict);
+            Job job = new Job(jobId, jobType, jobData);
 
             return job;
         }

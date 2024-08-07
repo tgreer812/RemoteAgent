@@ -7,11 +7,14 @@ using System.Text;
 using System.Threading.Tasks;
 using AgentCore.JobManagement;
 using static AgentCore.EventManagement.EventDispatcher;
+//using System.Text.Json.Nodes;
+using Newtonsoft.Json.Linq;
 
 namespace AgentCore.CommunicationManagement
 {
     public class CommunicationManager : ICoreService, ICommunicationManager
     {
+        private HttpClient Client { get; set; }
         internal bool IsRunning { get; private set; }
         private int PollingInterval { get; set; }
         private ILogger Logger { get; set; }
@@ -23,6 +26,17 @@ namespace AgentCore.CommunicationManagement
             IsRunning = false;
             PollingInterval = 10000; // 10 seconds
             ServerAddress = "http://localhost:5000";
+            this.Client = new HttpClient();
+        }
+
+        internal CommunicationManager(ILogger logger, HttpClient client)
+        {
+            Logger = logger;
+            IsRunning = false;
+            PollingInterval = 4000; // 10 seconds
+            ServerAddress = "http://localhost:5000";
+            this.Client = client;
+            this.Client.BaseAddress = new Uri(this.ServerAddress);
         }
 
         private async Task PollForTasking()
@@ -30,11 +44,8 @@ namespace AgentCore.CommunicationManagement
             await Task.Delay(PollingInterval);
 
             // Send a request to the server for tasking
-            HttpClient client = new HttpClient();
-            client.BaseAddress = new Uri(this.ServerAddress);
-
             string response = null;
-            await client.GetStringAsync(this.ServerAddress + TASKING_ENDPOINT).ContinueWith((task) =>
+            await this.Client.GetStringAsync(this.ServerAddress + TASKING_ENDPOINT).ContinueWith((task) =>
             {
                 if (task.IsFaulted)
                 {
@@ -51,10 +62,17 @@ namespace AgentCore.CommunicationManagement
                 return;
             }
 
-            // Convert response to an EventArgs object
-            // and publish an event
-            JsonEventArgs args = new JsonEventArgs(response);
-            Core.GetEventDispatcher().Publish("JobAdded", this, args);
+            // Response should be a JSON string with a key 'jobs' and value that is an array of jobs
+            // so parse the JSON string and convert it to a list of JsonEventArgs objects
+            // then publish an event for each JsonEventArgs object
+            var json = JObject.Parse(response);
+            var jobs = json["jobs"];
+
+            foreach (var job in jobs)
+            {
+                JsonEventArgs args = new JsonEventArgs(job.ToString());
+                Core.GetEventDispatcher().Publish("JobAdded", this, args);
+            }
         }
 
         public async Task Start()

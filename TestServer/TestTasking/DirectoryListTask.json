@@ -1,9 +1,14 @@
 {
-    "jobType": "PluginJob",
-    "jobData": {
-        "pluginName": "DirectoryListPlugin",
-        "pluginArguments": {
-            "path": "C:\\"
+    "jobs": [
+        {
+            "jobId": "1",
+            "jobType": "PluginJob",
+            "jobData": {
+                "pluginName": "DirectoryListPlugin",
+                "pluginArguments": {
+                    "path": "C:\\"
+                }
+            }
         }
-    }
+    ]
 }

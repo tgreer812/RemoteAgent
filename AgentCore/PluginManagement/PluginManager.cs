@@ -8,6 +8,7 @@ using AgentCommon.AgentPluginCommon;
 using CorePlugins;
 using AgentCommon;
 using AgentCore.JobManagement;
+using Newtonsoft.Json.Linq;
 
 namespace AgentCore.PluginManagement
 {
@@ -83,16 +84,10 @@ namespace AgentCore.PluginManagement
             throw new NotImplementedException();
         }
 
-        /*
-         "pluginName": "DirectoryListPlugin",
-            "pluginArguments": {
-                "path": "C:\\"
-            }
-         */
-        public void StartPlugin(IDictionary<string, object> args)
+        public void StartPlugin(JObject args)
         {
             string pluginName = args["pluginName"].ToString();
-            IDictionary<string, object> pluginArgsDict = (IDictionary<string, object>)args["pluginArguments"];
+            JObject jObjectPluginArgs = (JObject)args["pluginArguments"];
 
             // Check if the plugin is loaded
             if (!LoadedPlugins.ContainsKey(pluginName))
@@ -101,10 +96,19 @@ namespace AgentCore.PluginManagement
                 return;
             }
 
-            PluginArguments pluginArgs = new PluginArguments(pluginArgsDict);
+            PluginArguments pluginArgs = new PluginArguments(jObjectPluginArgs);
 
             IPlugin plugin = LoadedPlugins[pluginName];
-            plugin.Start(pluginArgs);
+
+            try
+            {
+                plugin.Start(pluginArgs);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to start plugin {pluginName}", ex);
+            }
+            
         }
 
         public async Task StopPlugin()
