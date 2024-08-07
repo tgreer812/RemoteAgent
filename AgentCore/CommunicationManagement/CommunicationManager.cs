@@ -24,19 +24,9 @@ namespace AgentCore.CommunicationManagement
         {
             Logger = logger;
             IsRunning = false;
-            PollingInterval = 10000; // 10 seconds
+            PollingInterval = 4000; // 4 seconds
             ServerAddress = "http://localhost:5000";
             this.Client = new HttpClient();
-        }
-
-        internal CommunicationManager(ILogger logger, HttpClient client)
-        {
-            Logger = logger;
-            IsRunning = false;
-            PollingInterval = 4000; // 10 seconds
-            ServerAddress = "http://localhost:5000";
-            this.Client = client;
-            this.Client.BaseAddress = new Uri(this.ServerAddress);
         }
 
         private async Task PollForTasking()
