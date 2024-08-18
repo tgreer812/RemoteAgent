@@ -1,6 +1,6 @@
 //import sqlite3 from 'sqlite3';
 
-export async function createUserTable(db) {
+export async function createTable(db) {
     await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -8,4 +8,8 @@ export async function createUserTable(db) {
             password TEXT NOT NULL
         );
     `);
+}
+
+export async function dropTable(db) {
+    await db.exec("DROP TABLE IF EXISTS users");
 }

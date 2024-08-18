@@ -9,3 +9,6 @@ db/*
 
 # Ignore package-lock.json
 package-lock.json
+
+# Ignore logs
+logs/*
