@@ -1,0 +1,11 @@
+# Ignore the node_modules directory (including all subdirectories and files)
+node_modules/
+
+# Ignore everything inside the db directory
+db/*
+
+# Ignore the .env file
+.env
+
+# Ignore package-lock.json
+package-lock.json
