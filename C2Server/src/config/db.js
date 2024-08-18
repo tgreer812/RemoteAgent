@@ -2,6 +2,9 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import dotenv from 'dotenv';
 
+import * as userModel from '../models/userModel.js';
+import * as agentModel from '../models/agentModel.js'
+
 dotenv.config();
 
 async function initializeDb() {
@@ -19,6 +22,7 @@ async function initializeDb() {
         driver: sqlite3.Database,
     });
 
+    await createTables(db);
 
     return db;
 }
@@ -28,20 +32,8 @@ async function closeDb(db) {
 }
 
 async function createTables(db) {
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-        );
-    `);
-
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS agents (
-            uuid TEXT PRIMARY KEY,
-            ipv4 TEXT,
-        );
-    `)
+    await userModel.createUserTable(db);
+    await agentModel.createAgentTable(db);    
 }
 
 export { initializeDb };
