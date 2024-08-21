@@ -1,0 +1,34 @@
+
+.grid-container {
+    display: grid;
+    border: 2px dotted red;
+    height: 100vh;
+    overflow: hidden;
+    grid-template-columns: 150px 1fr;
+}
+
+.vertical-navbar {
+    grid-column-start: 1;
+    grid-column-end: 2;
+    background-color: #031113;
+    grid-row-start: 1;
+    grid-row-end: 4;
+}
+
+ul {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    list-style: none;
+    padding: 0;
+}
+
+.vertical-navbar-items {
+    color:aliceblue;
+    text-align: center;
+}
+
+.current-view {
+    grid-column-start: 2;
+    grid-column-end: 5;
+}

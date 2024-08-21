@@ -5,7 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node src\\index.js",
+    "start": "npm run build-frontend && node src/index.js",
+    "dev": "concurrently \"npm run build-frontend:watch\" \"node src/index.js\"",
+    "build-frontend": "npm --prefix src/frontend run build",
+    "build-frontend:watch": "npm --prefix src/frontend run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -16,5 +19,8 @@
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "concurrently": "^7.0.0"
   }
 }
