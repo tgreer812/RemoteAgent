@@ -6,6 +6,7 @@ function App() {
 
   return (
     <>
+      <h1>You have hit the frontend!</h1>
     </>
   )
 }
