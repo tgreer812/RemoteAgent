@@ -1,0 +1,33 @@
+.grid-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .vertical-navbar {
+    width: 200px;
+    background-color: #f4f4f4;
+    padding: 20px;
+  }
+  
+  .vertical-navbar-items {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .vertical-navbar-item {
+    padding: 10px;
+    cursor: pointer;
+  }
+  
+  .vertical-navbar-item:hover {
+    background-color: #ddd;
+  }
+  
+  .current-view {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+  }
+  
