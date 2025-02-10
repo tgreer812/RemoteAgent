@@ -1,9 +1,6 @@
 ﻿using AgentCommon;
 using AgentCommon.AgentPluginCommon;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CorePlugins
@@ -13,31 +10,36 @@ namespace CorePlugins
         public ILogger Logger { get; set; }
         public PluginContext Context { get; set; }
 
-        public PluginBase(PluginContext context) 
-        { 
+        public PluginBase(PluginContext context)
+        {
             // Pull out the logger for convenience
             Logger = context.Logger;
             Context = context;
         }
 
-        public virtual bool Load(PluginArguments agentPluginArguments = null)
+        public virtual Task<bool> LoadAsync(PluginArguments agentPluginArguments = null)
         {
-            throw new NotImplementedException();
+            // Return a completed task with false to indicate not implemented, but allow override.
+            return Task.FromResult(false);
         }
 
-        public virtual bool Unload(PluginArguments agentPluginArguments = null)
+        public virtual Task<bool> UnloadAsync(PluginArguments agentPluginArguments = null)
         {
-            throw new NotImplementedException();
+            // Return a completed task with false to indicate not implemented, but allow override.
+            return Task.FromResult(false);
         }
 
-        public virtual bool Start(PluginArguments agentPluginArguments = null)
+        public virtual Task<PluginResult> StartAsync(PluginArguments agentPluginArguments = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            // Return a completed task with a default PluginResult (or you can customize it)
+            // to indicate not implemented, but allow override.
+            return Task.FromResult(default(PluginResult));
         }
 
-        public virtual bool Stop(PluginArguments agentPluginArguments = null)
+        public virtual Task<bool> StopAsync(PluginArguments agentPluginArguments = null)
         {
-            throw new NotImplementedException();
+            // Return a completed task with false to indicate not implemented, but allow override.
+            return Task.FromResult(false);
         }
     }
 }

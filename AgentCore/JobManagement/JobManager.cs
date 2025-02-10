@@ -85,7 +85,7 @@ namespace AgentCore.JobManagement
             }
         }
 
-        private void HandleJob(Job job)
+        private async void HandleJob(Job job)
         {
             switch (job.JobType)
             {
@@ -94,7 +94,7 @@ namespace AgentCore.JobManagement
                     throw new NotImplementedException();
                 case JobTypes.PluginJobType:
                     // TODO: parse job data and start plugin
-                    Core.Instance.PluginManager.StartPlugin(job.JobData);
+                    await Core.Instance.PluginManager.StartPluginAsync(job.JobData);
                     break;
                 default:
                     throw new Exception("Unknown task type");

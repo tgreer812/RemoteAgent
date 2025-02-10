@@ -47,6 +47,7 @@
     <Compile Include="AgentPluginCommon\PluginArguments.cs" />
     <Compile Include="AgentPluginCommon\AgentPluginAttribute.cs" />
     <Compile Include="AgentPluginCommon\PluginContext.cs" />
+    <Compile Include="AgentPluginCommon\PluginResult.cs" />
     <Compile Include="ConsoleLogger.cs" />
     <Compile Include="AgentPluginCommon\IPlugin.cs" />
     <Compile Include="ILogger.cs" />

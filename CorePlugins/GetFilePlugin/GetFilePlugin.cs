@@ -8,22 +8,12 @@ using AgentCommon.AgentPluginCommon;
 
 namespace CorePlugins.GetFilePlugin
 {
-    [AgentPlugin("GetFilePlugin")]
+    // TODO: Implement the GetFilePlugin class and uncomment this attribute when I do
+    //[AgentPlugin("GetFilePlugin")]
     internal class GetFilePlugin : PluginBase
     {
         public GetFilePlugin(PluginContext context) : base(context)
         {
-        }
-
-        public override bool Load(PluginArguments agentPluginArguments = null)
-        {
-            Logger.LogInfo("GetFilePlugin loaded");
-            return true;
-        }
-
-        public override bool Start(PluginArguments args = null)
-        {
-            throw new NotImplementedException();
         }
     }
 }

@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Reflection;
-using AgentCommon.AgentPluginCommon;
-using CorePlugins;
+using System.Threading;
+using System.Threading.Tasks;
 using AgentCommon;
+using AgentCommon.AgentPluginCommon;
+using AgentCore.EventManagement;
 using AgentCore.JobManagement;
+using CorePlugins;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace AgentCore.PluginManagement
@@ -33,7 +35,7 @@ namespace AgentCore.PluginManagement
             }
 
             IsRunning = true;
-            LoadCorePlugins();
+            await LoadCorePluginsAsync(); // Use the async version
 
             while (IsRunning)
             {
@@ -44,10 +46,10 @@ namespace AgentCore.PluginManagement
 
         public async Task<bool> Stop()
         {
-            return await this.StopAllPlugins();
+            return await StopAllPluginsAsync(); // Use the async version
         }
 
-        public void LoadCorePlugins()
+        public async Task LoadCorePluginsAsync() // Made LoadCorePlugins Async
         {
             // Load all plugins in the CorePlugins directory
             // by searching for the AgentPluginAttribute
@@ -57,7 +59,7 @@ namespace AgentCore.PluginManagement
             // Create a context object to pass to the plugins
             PluginContext context = new PluginContext();
             context.Logger = Logger;
-            
+
             var pluginTypes = corePluginsAssembly.GetTypes().Where(t => t.GetCustomAttributes(typeof(AgentPluginAttribute), false).Length > 0);
 
             foreach (var pluginType in pluginTypes)
@@ -65,26 +67,31 @@ namespace AgentCore.PluginManagement
                 Logger.LogInfo($"Loading plugin: {pluginType.Name}");
 
                 IPlugin plugin = (IPlugin)Activator.CreateInstance(pluginType, context);
-                if (plugin.Load())
+                bool loaded = await plugin.LoadAsync(); // Call LoadAsync and await
+                if (loaded)
                 {
                     LoadedPlugins.Add(pluginType.Name, plugin);
+                }
+                else
+                {
+                    Logger.LogError($"Plugin {pluginType.Name} failed to load."); // Log failure to load
                 }
             }
         }
 
-        public void LoadPlugin()
+        public async Task LoadPluginAsync() // Made LoadPlugin Async
         {
             // Load a plugin from a file
             throw new NotImplementedException();
         }
 
-        public void UnloadPlugin()
+        public async Task UnloadPluginAsync() // Made UnloadPlugin Async
         {
             // Unload a plugin
             throw new NotImplementedException();
         }
 
-        public void StartPlugin(JObject args)
+        public async Task StartPluginAsync(JObject args)
         {
             string pluginName = args["pluginName"].ToString();
             JObject jObjectPluginArgs = (JObject)args["pluginArguments"];
@@ -102,33 +109,76 @@ namespace AgentCore.PluginManagement
 
             try
             {
-                plugin.Start(pluginArgs);
+                PluginResult pluginResult = await plugin.StartAsync(pluginArgs, CancellationToken.None); // Call StartAsync and await, pass CancellationToken.None for now
+
+                if (pluginResult != null) // Check for null PluginResult
+                {
+                    Logger.LogInfo($"Plugin {pluginName} StartAsync completed with status: {pluginResult.Status}");
+                    if (pluginResult.Status == PluginStatus.Failed)
+                    {
+                        Logger.LogError($"Plugin {pluginName} reported failure: {pluginResult.ErrorMessage}");
+                    }
+                    // You can process pluginResult.OutputData here if needed
+                    if (pluginResult.OutputData != null)
+                    {
+                        Logger.LogDebug($"Plugin {pluginName} Output Data: {JsonConvert.SerializeObject(pluginResult.OutputData)}"); // Example of logging OutputData
+                    }
+                }
+                else
+                {
+                    // This shouldn't be possible
+                    throw new Exception($"Plugin {pluginName} StartAsync returned null PluginResult.");
+                }
+
+                Core.Instance.EventManager.Publish("PluginCompleted", this, new PluginCompletedEventArgs(pluginResult));
             }
             catch (Exception ex)
             {
                 Logger.LogError($"Failed to start plugin {pluginName}", ex);
             }
-            
         }
 
-        public async Task StopPlugin()
+        public async Task<bool> StopPluginAsync() // Made StopPlugin Async
         {
             // Stop a specific plugin
             throw new NotImplementedException();
         }
-    
-        public async Task<bool> StopAllPlugins()
+
+        public async Task<bool> StopAllPluginsAsync() // Made StopAllPlugins Async
         {
             // Stop all plugins
-            throw new NotImplementedException();
+            // Iterate through loaded plugins and call StopAsync on each
+            foreach (var pluginPair in LoadedPlugins)
+            {
+                string pluginName = pluginPair.Key;
+                IPlugin plugin = pluginPair.Value;
+                try
+                {
+                    bool stopped = await plugin.StopAsync(); // Call StopAsync and await
+                    if (stopped)
+                    {
+                        Logger.LogInfo($"Plugin {pluginName} stopped successfully.");
+                    }
+                    else
+                    {
+                        Logger.LogWarning($"Plugin {pluginName} StopAsync returned false or did not stop.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Error stopping plugin {pluginName}", ex);
+                    return false; // Indicate failure if any plugin fails to stop
+                }
+            }
+            return true; // All plugins (attempted to) stop
         }
 
         public void HandlePluginJob(Job job)
         {
             try
             {
-                _handlePluginJob(job);
-            } 
+                _handlePluginJobAsync(job).ConfigureAwait(false).GetAwaiter().GetResult(); // Block to call async method from sync context (HandlePluginJob) - Consider making HandlePluginJob Async if possible in your architecture.
+            }
             catch (Exception ex)
             {
                 Logger.LogError($"Failed to handle plugin job", ex);
@@ -139,11 +189,49 @@ namespace AgentCore.PluginManagement
         /// Not a safe method to call directly, as it does not catch exceptions
         /// </summary>
         /// <param name="job"></param>
-        private void _handlePluginJob(Job job)
+        private async Task _handlePluginJobAsync(Job job) // Made _handlePluginJob Async
         {
             Logger.LogDebug($"Handling plugin job: {job.JobData}");
-        }
+            // Placeholder for actual job handling logic - You'll need to determine which plugin to invoke based on Job data
+            // and then call the appropriate plugin's StartAsync or other relevant method.
+            // Example (Illustrative and needs to be adapted to your actual Job structure and plugin dispatching):
+            if (job.JobData is JObject jobDataJson)
+            {
+                string pluginName = jobDataJson["pluginName"]?.ToString(); // Assuming JobData contains pluginName
+                if (!string.IsNullOrEmpty(pluginName) && LoadedPlugins.ContainsKey(pluginName))
+                {
+                    IPlugin plugin = LoadedPlugins[pluginName];
+                    PluginArguments pluginArgs = new PluginArguments(jobDataJson["pluginArguments"] as JObject); // Assuming JobData also contains pluginArguments
+                    PluginResult pluginResult = await plugin.StartAsync(pluginArgs, CancellationToken.None); // Start the plugin's job
 
-        
+                    if (pluginResult != null)
+                    {
+                        Logger.LogInfo($"Plugin Job for {pluginName} completed with status: {pluginResult.Status}");
+                        if (pluginResult.Status == PluginStatus.Failed)
+                        {
+                            Logger.LogError($"Plugin Job for {pluginName} reported failure: {pluginResult.ErrorMessage}");
+                        }
+                        // Process pluginResult.OutputData if needed
+                        if (pluginResult.OutputData != null)
+                        {
+                            Logger.LogDebug($"Plugin Job for {pluginName} Output Data: {JsonConvert.SerializeObject(pluginResult.OutputData)}");
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogWarning($"Plugin Job for {pluginName} StartAsync returned null PluginResult.");
+                    }
+
+                }
+                else
+                {
+                    Logger.LogError($"Could not determine plugin name from job data or plugin not loaded.");
+                }
+            }
+            else
+            {
+                Logger.LogWarning($"Job data is not in expected JObject format for plugin job handling.");
+            }
+        }
     }
 }

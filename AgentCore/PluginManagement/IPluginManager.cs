@@ -1,22 +1,18 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AgentCore.PluginManagement
 {
     internal interface IPluginManager
     {
-        void LoadPlugin();
-        
-        void LoadCorePlugins();
-        
-        Task StopPlugin();
-        
-        Task<bool> StopAllPlugins();
+        Task LoadPluginAsync(); // Updated to async
 
-        void StartPlugin(JObject args);
+        Task LoadCorePluginsAsync(); // Updated to async
+
+        Task<bool> StopPluginAsync(); // Updated to async
+
+        Task<bool> StopAllPluginsAsync(); // Updated to async
+
+        Task StartPluginAsync(JObject args); // Updated to async
     }
 }

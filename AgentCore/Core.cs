@@ -22,11 +22,13 @@ namespace AgentCore
 
         internal IPluginManager PluginManager { get; set; }
         internal IJobManager JobManager { get; set; }
-        private IEventDispatcher EventManager { get; set; }
+        internal IEventDispatcher EventManager { get; set; }
 
         internal ICommunicationManager CommunicationManager { get; set; }
 
         public static Core Instance { get; private set; }
+
+        internal AgentConfig Config { get; set; }
 
         private Core() { }
 
@@ -42,6 +44,8 @@ namespace AgentCore
 
             Logger.LogInfo("Hello from Core!");
             IsRunning = true;
+
+            Config = AgentConfig.LoadFromFile("AgentConfig.json");
 
             StartCoreServices();
 
@@ -94,14 +98,14 @@ namespace AgentCore
         }
 
 
-        public void Stop()
+        public async void Stop()
         {
             if (!IsRunning) { Logger.LogError("Core is not running!"); return; }
 
             Logger.LogInfo("Core is stopping...");
 
             // Stop all plugins
-            PluginManager.StopAllPlugins();
+            await PluginManager.StopAllPluginsAsync();
 
             // Stop all core services
             var coreServices = GetType().GetProperties()

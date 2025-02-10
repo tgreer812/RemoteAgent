@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -72,6 +73,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AgentConfig.cs" />
     <Compile Include="CommunicationManagement\ServerRequest.cs" />
     <Compile Include="CommunicationManagement\CommunicationManager.cs" />
     <Compile Include="CommunicationManagement\ICommunicationManager.cs" />
@@ -106,6 +108,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AgentConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
