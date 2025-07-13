@@ -9,10 +9,12 @@ namespace AgentCore.PluginManagement
 {
     internal class PluginCompletedEventArgs : EventArgs
     {
+        public uint CorrelationId { get; set; }
         public PluginResult Result { get; set; }
 
-        public PluginCompletedEventArgs(PluginResult result)
+        public PluginCompletedEventArgs(uint correlationId, PluginResult result)
         {
+            CorrelationId = correlationId;
             Result = result;
         }
     }

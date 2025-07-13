@@ -28,21 +28,33 @@ namespace AgentCore.JobManagement
             }
 
             // Deserialize the JSON string to JObjects
-            var jsonObject = JObject.Parse(jsonString);
+            JObject jsonObject;
+            try
+            {
+                jsonObject = JObject.Parse(jsonString);
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException("Invalid JSON format: " + ex.Message, ex);
+            }
 
             if (!jsonObject.ContainsKey("jobType") || !jsonObject.ContainsKey("jobData"))
             {
                 throw new ArgumentException("JSON data does not contain required fields: jobType and jobData");
             }
 
-            string jobId = jsonObject["jobId"].ToString();
-            string jobType = jsonObject["jobType"].ToString();
-            JObject jobData = (JObject)jsonObject["jobData"];
-
-            // Create and return the Job object
-            Job job = new Job(jobId, jobType, jobData);
-
-            return job;
+            try
+            {
+                uint jobId = uint.Parse(jsonObject["jobId"].ToString());
+                string jobType = jsonObject["jobType"].ToString();
+                JObject jobData = (JObject)jsonObject["jobData"];
+                Job job = new Job(jobId, jobType, jobData);
+                return job;
+            }   
+            catch (Exception ex)
+            {
+                throw new ArgumentException("Error parsing JSON data: " + ex.Message);
+            }
         }
 
         private string ExtractJsonFromEventArgs(EventArgs args)

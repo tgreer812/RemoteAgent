@@ -1,4 +1,6 @@
 ﻿using AgentCommon;
+using AgentCore.EventManagement;
+using AgentCore.PluginManagement;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,89 +17,126 @@ namespace AgentCore.JobManagement
 
     internal class JobManager : ICoreService, IJobManager
     {
-        private readonly Queue<Job> _jobs = new Queue<Job>();
         private readonly IJobConverter _jobConverter;
+        private readonly IEventDispatcher _eventDispatcher;
+        private readonly IPluginManager _pluginManager;
         private ILogger Logger { get; set; }
 
         public bool IsRunning { get; set; }
-        internal JobManager(ILogger logger)
+        
+        internal JobManager(ILogger logger) : this(logger, null, null)
+        {
+        }
+
+        internal JobManager(ILogger logger, IEventDispatcher eventDispatcher) : this(logger, eventDispatcher, null)
+        {
+        }
+
+        internal JobManager(ILogger logger, IEventDispatcher eventDispatcher, IPluginManager pluginManager)
         {
             Logger = logger;    
             _jobConverter = new JobConverter();
+            _eventDispatcher = eventDispatcher;
+            _pluginManager = pluginManager;
         }
 
-        private void OnJobAdded(object sender, EventArgs e)
+        private async Task OnJobAddedAsync(object sender, EventArgs e)
         {
-            if (sender == null || e == null) { throw new ArgumentNullException(); }
+            if (sender == null || e == null) 
+            { 
+                Logger.LogError("OnJobAddedAsync called with null parameters");
+                return; 
+            }
 
-            Logger.LogDebug("Job added event received");
-            Job job = _jobConverter.Convert(e);
+            try
+            {
+                Logger.LogDebug("Job added event received");
+                Job job = _jobConverter.Convert(e);
 
-            Logger.LogDebug("Adding job to queue...");
-            AddJob(job);
+                Logger.LogDebug($"Processing job {job.JobId} of type {job.JobType}");
+                await ProcessJobAsync(job);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Error processing job from event", ex);
+            }
         }
 
-        public async Task Start()
+        public Task Start()
         {
-            if (IsRunning) { Logger.LogError("JobManager is already running!"); return; }
+            if (IsRunning) 
+            { 
+                Logger.LogError("JobManager is already running!"); 
+                return Task.CompletedTask; 
+            }
             
             Logger.LogInfo("JobManager is starting...");
 
-            // Subscribe to job events
-            Core.GetEventDispatcher().Subscribe("JobAdded", OnJobAdded);
-
-            int i = 0;
+            // Subscribe to job events using async handler
+            _eventDispatcher?.Subscribe("JobAdded", OnJobAddedAsync);
 
             IsRunning = true;
-            while (IsRunning)
-            {
-                Logger.LogDebug("JobManager is running...");
-                await Task.Delay(1000);
-                this.ProcessJobs();
-                i++;
-            }
+            Logger.LogInfo("JobManager started and listening for job events.");
+            return Task.CompletedTask;
         }
 
         public Task<bool> Stop()
         {
             Logger.LogInfo("JobManager is stopping...");
-            IsRunning = false;
-
-            Logger.LogWarning("Clearing job queue. Unhandled jobs will be lost.");
-            _jobs.Clear();
+            
+            if (IsRunning)
+            {
+                // Unsubscribe from events
+                _eventDispatcher?.Unsubscribe("JobAdded", OnJobAddedAsync);
+                IsRunning = false;
+            }
 
             return Task.FromResult(true);
         }
 
-        internal void AddJob(Job job)
+        private async Task ProcessJobAsync(Job job)
         {
-            _jobs.Enqueue(job);
-        }
-
-        internal void ProcessJobs()
-        {
-            Logger.LogDebug("Processing jobs...");
-            Logger.LogDebug($"Jobs in queue: {_jobs.Count}");
-            while (_jobs.Count > 0)
+            try
             {
-                var job = _jobs.Dequeue();
-                this.HandleJob(job);
+                Logger.LogDebug($"Processing job {job.JobId} of type {job.JobType}");
+                
+                switch (job.JobType)
+                {
+                    case JobTypes.CoreJobType:
+                        // Handle core task
+                        await ProcessCoreJobAsync(job);
+                        break;
+                    case JobTypes.PluginJobType:
+                        await ProcessPluginJobAsync(job);
+                        break;
+                    default:
+                        throw new Exception($"Unknown job type: {job.JobType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error processing job {job.JobId}", ex);
             }
         }
 
-        private async void HandleJob(Job job)
+        private async Task ProcessCoreJobAsync(Job job)
         {
-            switch (job.JobType)
+            Logger.LogInfo($"Processing core job {job.JobId}");
+            // TODO: Implement core job processing
+            await Task.CompletedTask;
+            throw new NotImplementedException("Core job processing not implemented");
+        }
+
+        private async Task ProcessPluginJobAsync(Job job)
+        {
+            Logger.LogInfo($"Processing plugin job {job.JobId}");
+            if (_pluginManager != null)
             {
-                case JobTypes.CoreJobType:
-                    // Handle core task
-                    throw new NotImplementedException();
-                case JobTypes.PluginJobType:
-                    // TODO: parse job data and start plugin
-                    await Core.Instance.PluginManager.StartPluginAsync(job.JobData);
-                    break;
-                default:
-                    throw new Exception("Unknown task type");
+                await _pluginManager.StartPluginAsync(job.JobId, job.JobData);
+            }
+            else
+            {
+                Logger.LogError("PluginManager not available to process plugin job");
             }
         }
     }

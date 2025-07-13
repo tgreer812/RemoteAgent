@@ -21,12 +21,22 @@ namespace AgentCommon
         public void LogError(string message, Exception exception = null)
         {
             Log($"ERROR: {message}");
-            Log(exception.ToString());
+            if (exception != null)
+            {
+                Log(exception.ToString());
+            }
         }
 
         public void LogException(Exception exception)
         {
-            exception.StackTrace.Split('\n').ToList().ForEach(Log);
+            if (exception?.StackTrace != null)
+            {
+                exception.StackTrace.Split('\n').ToList().ForEach(Log);
+            }
+            else if (exception != null)
+            {
+                Log(exception.ToString());
+            }
         }
 
         public void LogWarning(string message)

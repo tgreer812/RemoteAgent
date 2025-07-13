@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace AgentCore
 {
-    internal class AgentConfig
+    public class AgentConfig
     {
         [JsonPropertyName("agentGuid")]
         public string AgentGuid { get; set; } // Make property settable only within the class

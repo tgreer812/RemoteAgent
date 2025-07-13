@@ -7,6 +7,8 @@ namespace AgentCommon.AgentPluginCommon
     /// </summary>
     public class PluginResult
     {
+        public uint CorrelationId { get; set; }
+
         /// <summary>
         /// Gets or sets the status of the plugin result. Indicates whether the plugin operation was successful, failed, etc.
         /// </summary>

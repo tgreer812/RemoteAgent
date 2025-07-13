@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace AgentCore.PluginManagement
 {
-    internal interface IPluginManager
+    public interface IPluginManager
     {
         Task LoadPluginAsync(); // Updated to async
 
@@ -13,6 +13,6 @@ namespace AgentCore.PluginManagement
 
         Task<bool> StopAllPluginsAsync(); // Updated to async
 
-        Task StartPluginAsync(JObject args); // Updated to async
+        Task StartPluginAsync(uint correlationId, JObject args); // Updated to async
     }
 }

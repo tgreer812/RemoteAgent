@@ -1,5 +1,6 @@
 ﻿using AgentCommon;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,12 +11,13 @@ namespace AgentCore.EventManagement
     [LoadPriority(1)]
     public class EventDispatcher : ICoreService, IEventDispatcher
     {
-        // Define a delegate for event handlers
-        //public delegate void EventHandler(object sender, EventArgs e);
-
-        // Dictionary to hold events and their subscribers
-        private readonly Dictionary<string, List<EventHandler>> _eventHandlers = new Dictionary<string, List<EventHandler>>();
+        // Thread-safe dictionaries for event handlers
+        private readonly ConcurrentDictionary<string, List<EventHandler>> _syncEventHandlers = new ConcurrentDictionary<string, List<EventHandler>>();
+        private readonly ConcurrentDictionary<string, List<Func<object, EventArgs, Task>>> _asyncEventHandlers = new ConcurrentDictionary<string, List<Func<object, EventArgs, Task>>>();
+        private readonly object _lockObject = new object();
+        
         private ILogger Logger { get; set; }
+        
         internal EventDispatcher(ILogger logger)
         {
             Logger = logger;
@@ -24,7 +26,6 @@ namespace AgentCore.EventManagement
         public Task Start()
         {
             Logger.LogInfo("EventDispatcher is starting...");
-
             Logger.LogInfo("EventDispatcher started.");
             return Task.CompletedTask;
         }
@@ -33,62 +34,199 @@ namespace AgentCore.EventManagement
         {
             Logger.LogInfo("EventDispatcher is stopping...");
 
-            // Unsubscribe all event handlers
-            Logger.LogDebug("Unsubscribing all event handlers...");
-            foreach (var eventName in _eventHandlers.Keys)
-            {
-                foreach (var handler in _eventHandlers[eventName])
-                {
-                    Unsubscribe(eventName, handler);
-                }
-            }
+            // Clear all event handlers
+            Logger.LogDebug("Clearing all event handlers...");
+            _syncEventHandlers.Clear();
+            _asyncEventHandlers.Clear();
 
             Logger.LogInfo("EventDispatcher stopped.");
             return Task.FromResult(true);
-
         }
         
-        // Method to subscribe to an event
+        // Method to subscribe to a synchronous event
         public void Subscribe(string eventName, EventHandler handler)
         {
-            if (!_eventHandlers.ContainsKey(eventName))
+            lock (_lockObject)
             {
-                Logger.LogDebug($"Creating new event {eventName}");
-                _eventHandlers[eventName] = new List<EventHandler>();
+                var handlers = _syncEventHandlers.GetOrAdd(eventName, _ => new List<EventHandler>());
+                if (!handlers.Contains(handler))
+                {
+                    Logger.LogDebug($"Adding sync subscriber to event {eventName}");
+                    handlers.Add(handler);
+                }
             }
-
-            Logger.LogDebug($"Adding subscriber to event {eventName}");
-            _eventHandlers[eventName].Add(handler);
         }
 
-        // Method to unsubscribe from an event
+        // Method to subscribe to an asynchronous event
+        public void Subscribe(string eventName, Func<object, EventArgs, Task> asyncHandler)
+        {
+            lock (_lockObject)
+            {
+                var handlers = _asyncEventHandlers.GetOrAdd(eventName, _ => new List<Func<object, EventArgs, Task>>());
+                if (!handlers.Contains(asyncHandler))
+                {
+                    Logger.LogDebug($"Adding async subscriber to event {eventName}");
+                    handlers.Add(asyncHandler);
+                }
+            }
+        }
+
+        // Method to unsubscribe from a synchronous event
         public void Unsubscribe(string eventName, EventHandler handler)
         {
-            if (_eventHandlers.ContainsKey(eventName))
+            lock (_lockObject)
             {
-                Logger.LogDebug($"Removing subscriber from event {eventName}");
-                _eventHandlers[eventName].Remove(handler);
-                if (_eventHandlers[eventName].Count == 0)
+                if (_syncEventHandlers.TryGetValue(eventName, out var handlers))
                 {
-                    _eventHandlers.Remove(eventName);
+                    Logger.LogDebug($"Removing sync subscriber from event {eventName}");
+                    handlers.Remove(handler);
+                    if (handlers.Count == 0)
+                    {
+                        _syncEventHandlers.TryRemove(eventName, out _);
+                    }
                 }
-            } 
-            else
-            {
-                Logger.LogWarning($"Event {eventName} not found!");
+                else
+                {
+                    Logger.LogWarning($"Sync event {eventName} not found!");
+                }
             }
         }
 
-        // Method to publish an event
+        // Method to unsubscribe from an asynchronous event
+        public void Unsubscribe(string eventName, Func<object, EventArgs, Task> asyncHandler)
+        {
+            lock (_lockObject)
+            {
+                if (_asyncEventHandlers.TryGetValue(eventName, out var handlers))
+                {
+                    Logger.LogDebug($"Removing async subscriber from event {eventName}");
+                    handlers.Remove(asyncHandler);
+                    if (handlers.Count == 0)
+                    {
+                        _asyncEventHandlers.TryRemove(eventName, out _);
+                    }
+                }
+                else
+                {
+                    Logger.LogWarning($"Async event {eventName} not found!");
+                }
+            }
+        }
+
+        // Method to publish an event synchronously
         public void Publish(string eventName, object sender, EventArgs e)
         {
-            if (_eventHandlers.ContainsKey(eventName))
+            Logger.LogDebug($"Publishing sync event {eventName}");
+
+            // Call synchronous handlers
+            if (_syncEventHandlers.TryGetValue(eventName, out var syncHandlers))
             {
-                Logger.LogDebug($"Publishing event {eventName}");
-                foreach (var handler in _eventHandlers[eventName])
+                List<EventHandler> handlersCopy;
+                lock (_lockObject)
                 {
-                    handler(sender, e);
+                    handlersCopy = new List<EventHandler>(syncHandlers);
                 }
+
+                foreach (var handler in handlersCopy)
+                {
+                    try
+                    {
+                        handler(sender, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Error in sync event handler for {eventName}", ex);
+                    }
+                }
+            }
+
+            // Fire async handlers without awaiting (fire and forget for sync publish)
+            if (_asyncEventHandlers.TryGetValue(eventName, out var asyncHandlers))
+            {
+                List<Func<object, EventArgs, Task>> asyncHandlersCopy;
+                lock (_lockObject)
+                {
+                    asyncHandlersCopy = new List<Func<object, EventArgs, Task>>(asyncHandlers);
+                }
+
+                foreach (var asyncHandler in asyncHandlersCopy)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await asyncHandler(sender, e);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"Error in async event handler for {eventName}", ex);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Method to publish an event asynchronously
+        public async Task PublishAsync(string eventName, object sender, EventArgs e)
+        {
+            Logger.LogDebug($"Publishing async event {eventName}");
+
+            var tasks = new List<Task>();
+
+            // Call synchronous handlers
+            if (_syncEventHandlers.TryGetValue(eventName, out var syncHandlers))
+            {
+                List<EventHandler> handlersCopy;
+                lock (_lockObject)
+                {
+                    handlersCopy = new List<EventHandler>(syncHandlers);
+                }
+
+                foreach (var handler in handlersCopy)
+                {
+                    tasks.Add(Task.Run(() =>
+                    {
+                        try
+                        {
+                            handler(sender, e);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"Error in sync event handler for {eventName}", ex);
+                        }
+                    }));
+                }
+            }
+
+            // Call asynchronous handlers
+            if (_asyncEventHandlers.TryGetValue(eventName, out var asyncHandlers))
+            {
+                List<Func<object, EventArgs, Task>> asyncHandlersCopy;
+                lock (_lockObject)
+                {
+                    asyncHandlersCopy = new List<Func<object, EventArgs, Task>>(asyncHandlers);
+                }
+
+                foreach (var asyncHandler in asyncHandlersCopy)
+                {
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await asyncHandler(sender, e);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"Error in async event handler for {eventName}", ex);
+                        }
+                    }));
+                }
+            }
+
+            // Wait for all handlers to complete
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks);
             }
         }
 
