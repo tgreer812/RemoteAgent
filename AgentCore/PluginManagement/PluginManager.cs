@@ -18,11 +18,13 @@ namespace AgentCore.PluginManagement
     {
         public ILogger Logger { get; set; }
         public Dictionary<string, IPlugin> LoadedPlugins { get; set; }
+        private readonly IEventDispatcher _eventDispatcher;
 
         public bool IsRunning { get; set; }
-        public PluginManager(ILogger logger)
+        public PluginManager(ILogger logger, IEventDispatcher eventDispatcher = null)
         {
             Logger = logger;
+            _eventDispatcher = eventDispatcher;
             LoadedPlugins = new Dictionary<string, IPlugin>();
         }
 
@@ -79,19 +81,19 @@ namespace AgentCore.PluginManagement
             }
         }
 
-        public async Task LoadPluginAsync() // Made LoadPlugin Async
+        public Task LoadPluginAsync() // Made LoadPlugin Async
         {
             // Load a plugin from a file
             throw new NotImplementedException();
         }
 
-        public async Task UnloadPluginAsync() // Made UnloadPlugin Async
+        public Task UnloadPluginAsync() // Made UnloadPlugin Async
         {
             // Unload a plugin
             throw new NotImplementedException();
         }
 
-        public async Task StartPluginAsync(JObject args)
+        public async Task StartPluginAsync(uint correlationId, JObject args)
         {
             string pluginName = args["pluginName"].ToString();
             JObject jObjectPluginArgs = (JObject)args["pluginArguments"];
@@ -103,7 +105,7 @@ namespace AgentCore.PluginManagement
                 return;
             }
 
-            PluginArguments pluginArgs = new PluginArguments(jObjectPluginArgs);
+            PluginArguments pluginArgs = PluginArguments.FromJObject(jObjectPluginArgs);
 
             IPlugin plugin = LoadedPlugins[pluginName];
 
@@ -130,7 +132,8 @@ namespace AgentCore.PluginManagement
                     throw new Exception($"Plugin {pluginName} StartAsync returned null PluginResult.");
                 }
 
-                Core.Instance.EventManager.Publish("PluginCompleted", this, new PluginCompletedEventArgs(pluginResult));
+                // Publish plugin completion event if event dispatcher is available
+                _eventDispatcher?.Publish("PluginCompleted", this, new PluginCompletedEventArgs(correlationId, pluginResult));
             }
             catch (Exception ex)
             {
@@ -138,7 +141,7 @@ namespace AgentCore.PluginManagement
             }
         }
 
-        public async Task<bool> StopPluginAsync() // Made StopPlugin Async
+        public Task<bool> StopPluginAsync() // Made StopPlugin Async
         {
             // Stop a specific plugin
             throw new NotImplementedException();
@@ -201,7 +204,7 @@ namespace AgentCore.PluginManagement
                 if (!string.IsNullOrEmpty(pluginName) && LoadedPlugins.ContainsKey(pluginName))
                 {
                     IPlugin plugin = LoadedPlugins[pluginName];
-                    PluginArguments pluginArgs = new PluginArguments(jobDataJson["pluginArguments"] as JObject); // Assuming JobData also contains pluginArguments
+                    PluginArguments pluginArgs = PluginArguments.FromJObject(jobDataJson["pluginArguments"] as JObject); // Assuming JobData also contains pluginArguments
                     PluginResult pluginResult = await plugin.StartAsync(pluginArgs, CancellationToken.None); // Start the plugin's job
 
                     if (pluginResult != null)

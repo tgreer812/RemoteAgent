@@ -1,8 +1,7 @@
 ﻿using AgentCommon;
 using AgentCore.PluginManagement;
 using AgentCommon.AgentPluginCommon;
-
-//using System.Text.Json.Nodes;
+using AgentCore.EventManagement;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
@@ -13,209 +12,396 @@ using static AgentCore.EventManagement.EventDispatcher;
 
 namespace AgentCore.CommunicationManagement
 {
-    public class CommunicationManager : ICoreService, ICommunicationManager
+    /// <summary>
+    /// Manages communication with the remote server using event-driven architecture
+    /// </summary>
+    public class CommunicationManager : ICoreService, ICommunicationManager, IDisposable
     {
-        private HttpClient Client { get; set; }
-        internal bool IsRunning { get; private set; }
-        private int PollingInterval { get; set; }
-        private ILogger Logger { get; set; }
-        private string ServerAddress { get; set; }
-        private const string TASKING_ENDPOINT = "api/tasking";
-        private const string JOB_ENDPOINT = "api/job";
-        private const string AGENT_HELLO_ENDPOINT = "api/agents/hello";
-        internal CommunicationManager(ILogger logger)
+        private readonly IHttpClientWrapper _httpClient;
+        private readonly ICommunicationConfiguration _config;
+        private readonly IEventDispatcher _eventDispatcher;
+        private readonly IMessageSerializer _messageSerializer;
+        private readonly ILogger _logger;
+        private readonly AgentConfig _agentConfig;
+        
+        private bool _isRunning;
+        private bool _disposed;
+
+        public bool IsRunning => _isRunning;
+
+        internal CommunicationManager(ILogger logger) 
+            : this(logger, new HttpClientWrapper(), new DefaultCommunicationConfiguration(), null, new JsonMessageSerializer(logger), null)
         {
-            // TODO: Refactor this so that endpoints, ports, etc. are read from configuration/constants files
-            Logger = logger;
-            IsRunning = false;
-            PollingInterval = 4000; // 4 seconds
-            ServerAddress = "http://localhost:5148";
-            this.Client = new HttpClient();
         }
 
-        private async Task PollForTasking()
+        internal CommunicationManager(
+            ILogger logger,
+            IHttpClientWrapper httpClient,
+            ICommunicationConfiguration config,
+            IEventDispatcher eventDispatcher,
+            IMessageSerializer messageSerializer,
+            AgentConfig agentConfig = null)
         {
-            await Task.Delay(PollingInterval);
-
-            // Send a request to the server for tasking
-            string response = null;
-            await this.Client.GetStringAsync($"{this.ServerAddress}/{TASKING_ENDPOINT}/{Core.Instance.Config.AgentId}").ContinueWith((task) =>
-            {
-                if (task.IsFaulted)
-                {
-                    Logger.LogError("Error polling for tasking: " + task.Exception.Message);
-                    return;
-                }
-
-                response = task.Result;
-            });
-
-            if (response == null)
-            {
-                Logger.LogDebug("No tasking response received");
-                return;
-            }
-
-            // Response should be a JSON string with a key 'jobs' and value that is an array of jobs
-            // so parse the JSON string and convert it to a list of JsonEventArgs objects
-            // then publish an event for each JsonEventArgs object
-            var json = JObject.Parse(response);
-            var jobs = json["jobs"];
-
-            foreach (var job in jobs)
-            {
-                JsonEventArgs args = new JsonEventArgs(job.ToString());
-                Core.GetEventDispatcher().Publish("JobAdded", this, args);
-            }
-        }
-
-        private async Task<bool> SendHelloMessage()
-        {
-            Logger.LogInfo("Sending agent hello message to server...");
-
-            var helloPayload = new
-            {
-                
-                agentGuid = Core.Instance.Config.AgentGuid // Include AgentGuid from config
-            };
-
-            string jsonPayload = System.Text.Json.JsonSerializer.Serialize(helloPayload);
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-
-            HttpResponseMessage response = null;
-            try
-            {
-                response = await Client.PostAsync($"{ServerAddress}/{AGENT_HELLO_ENDPOINT}", content);
-            }
-            catch (HttpRequestException)
-            {
-                //Logger.LogError($"Error sending hello message: HTTP Request Error - {ex.Message}");
-                return false; // Handshake failed due to HTTP error
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error sending hello message: Unexpected Error - {ex.Message}");
-                return false; // Handshake failed due to unexpected error
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                string responseContent = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    var helloResponseJson = JsonDocument.Parse(responseContent);
-                    JsonElement root = helloResponseJson.RootElement;
-
-                    if (root.TryGetProperty("agentId", out JsonElement agentIdElement) && agentIdElement.TryGetInt32(out int agentId))
-                    {
-                        Core.Instance.Config.AgentId = agentId; // Store the agentId received from the server
-                        Logger.LogInfo($"Agent handshake successful. Assigned AgentId: {agentId}");
-                        return true; // Handshake successful
-                    }
-                    else
-                    {
-                        Logger.LogError("Error during hello handshake: Server response did not contain 'agentId' or it was not a valid integer.");
-                        Logger.LogDebug($"Server Response Content: {responseContent}"); // Log response for debugging
-                        return false; // Handshake failed - missing agentId
-                    }
-                }
-                catch (JsonException jEx)
-                {
-                    Logger.LogError($"Error parsing hello response JSON: {jEx.Message}");
-                    Logger.LogDebug($"Server Response Content: {responseContent}"); // Log response for debugging
-                    return false; // Handshake failed - invalid JSON response
-                }
-            }
-            else
-            {
-                Logger.LogError($"Error during hello handshake: HTTP Status Code - {response.StatusCode}");
-                string errorContent = await response.Content.ReadAsStringAsync();
-                Logger.LogDebug($"Server Error Response Content: {errorContent}"); // Log error response for debugging
-                return false; // Handshake failed - HTTP error status
-            }
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _eventDispatcher = eventDispatcher;
+            _messageSerializer = messageSerializer ?? throw new ArgumentNullException(nameof(messageSerializer));
+            _agentConfig = agentConfig;
         }
 
         public async Task Start()
         {
-            if (IsRunning)
+            if (_isRunning)
             {
-                Logger.LogWarning("Communication manager is already running");
+                _logger.LogWarning("Communication manager is already running");
                 return;
             }
 
-            Logger.LogInfo("Communication manager is starting...");
+            _logger.LogInfo("Communication manager is starting...");
+            _isRunning = true;
 
-            bool handshakeSuccessful = false;
-            int retryCount = 0;
-            IsRunning = true;
-
-            while (!handshakeSuccessful && IsRunning) // Loop while handshake fails AND the manager should be running
+            try
             {
-                retryCount++;
-                Logger.LogInfo($"Attempting Hello handshake (Attempt #{retryCount})...");
-
-                handshakeSuccessful = await SendHelloMessage();
-
-                if (handshakeSuccessful)
+                // Perform handshake with server
+                bool handshakeSuccessful = await PerformHandshakeWithRetry();
+                
+                if (!handshakeSuccessful)
                 {
-                    Logger.LogInfo("Hello handshake succeeded after retry.");
-                    break; // Exit the retry loop if handshake is successful
+                    _logger.LogError("Communication manager failed to start - handshake unsuccessful");
+                    _isRunning = false;
+                    return;
+                }
+
+                // Subscribe to events for communication triggers
+                SubscribeToEvents();
+
+                _logger.LogInfo("Communication manager started successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error starting communication manager", ex);
+                _isRunning = false;
+                throw;
+            }
+        }
+
+        public Task<bool> Stop()
+        {
+            if (!_isRunning)
+            {
+                _logger.LogInfo("Communication manager is already stopped");
+                return Task.FromResult(true);
+            }
+
+            _logger.LogInfo("Communication manager is stopping...");
+            
+            try
+            {
+                // Unsubscribe from events
+                UnsubscribeFromEvents();
+                
+                _isRunning = false;
+                _logger.LogInfo("Communication manager stopped successfully");
+                return Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error stopping communication manager", ex);
+                return Task.FromResult(false);
+            }
+        }
+
+        public async Task RequestTaskingAsync()
+        {
+            if (!_isRunning)
+            {
+                _logger.LogWarning("Cannot request tasking - communication manager is not running");
+                return;
+            }
+
+            if (!_config.AgentId.HasValue)
+            {
+                _logger.LogWarning("Cannot request tasking - agent ID not set");
+                return;
+            }
+
+            try
+            {
+                _logger.LogDebug("Requesting tasking from server...");
+                
+                string taskingUrl = $"{_config.ServerAddress}/{_config.TaskingEndpoint}/{_config.AgentId.Value}";
+                string response = await _httpClient.GetStringAsync(taskingUrl);
+
+                if (string.IsNullOrEmpty(response))
+                {
+                    _logger.LogDebug("No tasking response received");
+                    return;
+                }
+
+                ProcessTaskingResponse(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error requesting tasking from server", ex);
+            }
+        }
+
+        public async Task<bool> SendPluginResultAsync(uint correlationId, object result)
+        {
+            if (!_isRunning)
+            {
+                _logger.LogWarning("Cannot send plugin result - communication manager is not running");
+                return false;
+            }
+
+            try
+            {
+                _logger.LogDebug($"Sending plugin result for correlation ID: {correlationId}");
+                
+                string jsonPayload = JsonSerializer.Serialize(result);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                
+                string resultUrl = $"{_config.ServerAddress}/{_config.JobEndpoint}/{correlationId}";
+                var response = await _httpClient.PutAsync(resultUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogDebug($"Plugin result sent successfully for correlation ID: {correlationId}");
+                    return true;
                 }
                 else
                 {
-                    Logger.LogWarning($"Hello handshake failed (Attempt #{retryCount}). Retrying in 30 seconds...");
-                    await Task.Delay(TimeSpan.FromSeconds(30)); // Wait 30 seconds before retrying
+                    _logger.LogError($"Failed to send plugin result. HTTP Status: {response.StatusCode}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error sending plugin result for correlation ID: {correlationId}", ex);
+                return false;
+            }
+        }
+
+        private async Task<bool> PerformHandshakeWithRetry()
+        {
+            int retryCount = 0;
+            
+            while (retryCount <= _config.MaxHandshakeRetries && _isRunning)
+            {
+                retryCount++;
+                _logger.LogInfo($"Attempting handshake with server (Attempt #{retryCount})...");
+
+                try
+                {
+                    bool success = await SendHelloMessageAsync();
+                    if (success)
+                    {
+                        _logger.LogInfo("Handshake completed successfully");
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Handshake attempt #{retryCount} failed", ex);
+                }
+
+                if (retryCount <= _config.MaxHandshakeRetries)
+                {
+                    _logger.LogWarning($"Handshake failed (Attempt #{retryCount}). Retrying in {_config.HandshakeRetryDelay.TotalSeconds} seconds...");
+                    await Task.Delay(_config.HandshakeRetryDelay);
                 }
             }
 
-            if (!handshakeSuccessful)
+            _logger.LogError($"Handshake failed after {_config.MaxHandshakeRetries} attempts");
+            return false;
+        }
+
+        private async Task<bool> SendHelloMessageAsync()
+        {
+            _logger.LogInfo("Sending agent hello message to server...");
+
+            var helloPayload = new
             {
-                Logger.LogError("Communication manager failed to start - Hello handshake unsuccessful after multiple retries.");
-                return; // Stop starting if handshake ultimately fails after retries
-            }
+                agentGuid = _config.AgentGuid
+            };
 
-            // Subscribe to PluginCompleted event to send results back to server
-            Core.GetEventDispatcher().Subscribe("PluginCompleted", OnPluginCompleted);
+            string jsonPayload = JsonSerializer.Serialize(helloPayload);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
-            while (IsRunning)
+            try
             {
-                Logger.LogDebug("Communication manager is running");
-                await PollForTasking();
-            }
+                string helloUrl = $"{_config.ServerAddress}/{_config.AgentHelloEndpoint}";
+                var response = await _httpClient.PostAsync(helloUrl, content);
 
-            Logger.LogInfo("Communication manager stopped."); // Add log for when the manager stops running (if it ever gets out of the while loop in normal operation)
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    return ProcessHelloResponse(responseContent);
+                }
+                else
+                {
+                    _logger.LogError($"Hello handshake failed. HTTP Status: {response.StatusCode}");
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogDebug($"Server error response: {errorContent}");
+                    return false;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError($"HTTP error during hello handshake: {ex.Message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Unexpected error during hello handshake", ex);
+                return false;
+            }
+        }
+
+        private bool ProcessHelloResponse(string responseContent)
+        {
+            try
+            {
+                var helloResponseJson = JsonDocument.Parse(responseContent);
+                JsonElement root = helloResponseJson.RootElement;
+
+                if (root.TryGetProperty("agentId", out JsonElement agentIdElement) && 
+                    agentIdElement.TryGetInt32(out int agentId))
+                {
+                    _config.AgentId = agentId;
+                    
+                    // Also update the AgentConfig if available
+                    if (_agentConfig != null)
+                    {
+                        _agentConfig.AgentId = agentId;
+                    }
+                    
+                    _logger.LogInfo($"Agent handshake successful. Assigned AgentId: {agentId}");
+                    return true;
+                }
+                else
+                {
+                    _logger.LogError("Server response did not contain valid 'agentId'");
+                    _logger.LogDebug($"Server response: {responseContent}");
+                    return false;
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError("Error parsing hello response JSON", ex);
+                _logger.LogDebug($"Server response: {responseContent}");
+                return false;
+            }
+        }
+
+        private void ProcessTaskingResponse(string response)
+        {
+            try
+            {
+                var json = JObject.Parse(response);
+                var jobs = json["jobs"];
+
+                if (jobs != null)
+                {
+                    var jobCount = 0;
+                    foreach (var job in jobs)
+                    {
+                        var args = new JsonEventArgs(job.ToString());
+                        _eventDispatcher?.Publish("JobAdded", this, args);
+                        jobCount++;
+                    }
+                    
+                    _logger.LogDebug($"Processed {jobCount} jobs from tasking response");
+                }
+                else
+                {
+                    _logger.LogDebug("No jobs found in tasking response");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error processing tasking response", ex);
+            }
+        }
+
+        private void SubscribeToEvents()
+        {
+            try
+            {
+                // Subscribe to plugin completion events
+                _eventDispatcher?.Subscribe("PluginCompleted", OnPluginCompleted);
+                
+                // Subscribe to tasking request events
+                _eventDispatcher?.Subscribe("RequestTasking", OnTaskingRequested);
+                
+                _logger.LogDebug("Subscribed to communication events");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error subscribing to events", ex);
+            }
+        }
+
+        private void UnsubscribeFromEvents()
+        {
+            try
+            {
+                _eventDispatcher?.Unsubscribe("PluginCompleted", OnPluginCompleted);
+                _eventDispatcher?.Unsubscribe("RequestTasking", OnTaskingRequested);
+                
+                _logger.LogDebug("Unsubscribed from communication events");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error unsubscribing from events", ex);
+            }
         }
 
         private void OnPluginCompleted(object sender, EventArgs e)
         {
             try
             {
-                PluginResult pluginResult = ((PluginCompletedEventArgs)e).Result;
-
-                this.Client.PutAsync($"{this.ServerAddress}/{TASKING_ENDPOINT}/{Core.Instance.Config.AgentId}", new StringContent(JsonSerializer.Serialize(pluginResult), Encoding.UTF8, "application/json"))
-                    .ContinueWith((task) =>
-                    {
-                        if (task.IsFaulted)
-                        {
-                            Logger.LogError("Error sending plugin result: " + task.Exception.Message);
-                        }
-                    }); 
-            }
-            catch (InvalidCastException ex)
-            {
-                Logger.LogError($"Error casting EventArgs to PluginCompletedEventArgs: {ex.Message}");
+                if (e is PluginCompletedEventArgs pluginArgs)
+                {
+                    var result = pluginArgs.Result;
+                    _ = Task.Run(async () => await SendPluginResultAsync(result.CorrelationId, result));
+                }
+                else
+                {
+                    _logger.LogError("Invalid event args type for PluginCompleted event");
+                }
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error handling PluginCompleted event: {ex.Message}");
+                _logger.LogError("Error handling PluginCompleted event", ex);
             }
         }
 
-        public async Task<bool> Stop()
+        private void OnTaskingRequested(object sender, EventArgs e)
         {
-            IsRunning = false;
-            Logger.LogInfo("Communication manager is stopping...");
-            return await Task.FromResult(true);
+            try
+            {
+                _ = Task.Run(async () => await RequestTaskingAsync());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error handling RequestTasking event", ex);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                if (_isRunning)
+                {
+                    _ = Task.Run(async () => await Stop());
+                }
+                
+                _httpClient?.Dispose();
+                _disposed = true;
+            }
         }
     }
 }

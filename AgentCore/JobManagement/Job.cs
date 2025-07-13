@@ -9,11 +9,11 @@ namespace AgentCore.JobManagement
 {
     public class Job
     {
-        public string JobId { get; set; }
+        public uint JobId { get; set; }
         public string JobType { get; set; }
         public JObject JobData { get; set; }
 
-        public Job(string jobId, string jobType, JObject jobData)
+        public Job(uint jobId, string jobType, JObject jobData)
         {
             JobId = jobId;
             JobType = jobType;

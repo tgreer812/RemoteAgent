@@ -8,5 +8,8 @@ namespace AgentCore.JobManagement
 {
     public interface IJobManager
     {
+        bool IsRunning { get; }
+        Task Start();
+        Task<bool> Stop();
     }
 }
