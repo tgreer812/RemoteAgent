@@ -50,12 +50,12 @@ namespace AgentCore.CommunicationManagement
             _agentConfig = agentConfig;
         }
 
-        public async Task Start()
+        public Task Start()
         {
             if (_isRunning)
             {
                 _logger.LogWarning("Communication manager is already running");
-                return;
+                return Task.CompletedTask;
             }
 
             _logger.LogInfo("Communication manager is starting...");
@@ -63,20 +63,32 @@ namespace AgentCore.CommunicationManagement
 
             try
             {
-                // Perform handshake with server
-                bool handshakeSuccessful = await PerformHandshakeWithRetry();
-                
-                if (!handshakeSuccessful)
-                {
-                    _logger.LogError("Communication manager failed to start - handshake unsuccessful");
-                    _isRunning = false;
-                    return;
-                }
-
-                // Subscribe to events for communication triggers
+                // Subscribe to events for communication triggers first
                 SubscribeToEvents();
 
+                // Start handshake in background - don't block startup
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        bool handshakeSuccessful = await PerformHandshakeWithRetry();
+                        if (handshakeSuccessful)
+                        {
+                            _logger.LogInfo("Background handshake completed successfully");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Background handshake failed after all retries");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError("Error in background handshake", ex);
+                    }
+                });
+
                 _logger.LogInfo("Communication manager started successfully");
+                return Task.CompletedTask;
             }
             catch (Exception ex)
             {

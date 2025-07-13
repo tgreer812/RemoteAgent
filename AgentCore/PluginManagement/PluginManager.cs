@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -38,12 +39,7 @@ namespace AgentCore.PluginManagement
 
             IsRunning = true;
             await LoadCorePluginsAsync(); // Use the async version
-
-            while (IsRunning)
-            {
-                await Task.Delay(1000);
-                Logger.LogDebug("PluginManager is running...");
-            }
+            Logger.LogInfo("PluginManager started successfully");
         }
 
         public async Task<bool> Stop()
@@ -56,7 +52,8 @@ namespace AgentCore.PluginManagement
             // Load all plugins in the CorePlugins directory
             // by searching for the AgentPluginAttribute
             // and instantiating the class
-            Assembly corePluginsAssembly = Assembly.LoadFrom("CorePlugins.dll");
+            var pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CorePlugins.dll");
+            Assembly corePluginsAssembly = Assembly.LoadFrom(pluginPath);
 
             // Create a context object to pass to the plugins
             PluginContext context = new PluginContext();
@@ -170,9 +167,12 @@ namespace AgentCore.PluginManagement
                 catch (Exception ex)
                 {
                     Logger.LogError($"Error stopping plugin {pluginName}", ex);
-                    return false; // Indicate failure if any plugin fails to stop
+                    // Continue stopping other plugins instead of returning false
                 }
             }
+            
+            IsRunning = false;
+            Logger.LogInfo("PluginManager stopped successfully");
             return true; // All plugins (attempted to) stop
         }
 
