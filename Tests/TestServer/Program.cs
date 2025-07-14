@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Collections.Concurrent;
 
-namespace TestServer.CSharp;
+namespace TestServer;
 
 /// <summary>
 /// Lightweight C# HTTP server for testing RemoteAgent without Python dependency

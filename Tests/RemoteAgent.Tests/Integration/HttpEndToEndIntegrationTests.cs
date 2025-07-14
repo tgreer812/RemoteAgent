@@ -58,7 +58,8 @@ namespace RemoteAgent.Tests.Integration
             _coreHost = CoreHostFactory.CreateDefault();
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
+        [Trait("Category", "Integration")]
         public async Task FullHttpWorkflow_AgentRegistrationAndJobExecution_ShouldWorkEndToEnd()
         {
             // Arrange - Start the C2 server
@@ -96,7 +97,8 @@ namespace RemoteAgent.Tests.Integration
             Assert.False(_coreHost.IsRunning);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
+        [Trait("Category", "Integration")]
         public async Task AgentResilience_ServerDownThenUp_ShouldRecoverAndContinue()
         {
             // Arrange - Start agent without server (should handle gracefully)
@@ -132,7 +134,8 @@ namespace RemoteAgent.Tests.Integration
             await _coreHost.StopAsync();
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
+        [Trait("Category", "Integration")]
         public async Task DirectoryListJob_WithRealFiles_ShouldReturnCorrectResults()
         {
             // Arrange
@@ -182,16 +185,16 @@ namespace RemoteAgent.Tests.Integration
                 var testsDir = currentDir;
                 
                 // Navigate up to find the Tests directory 
-                while (!Directory.Exists(Path.Combine(testsDir, "TestServer.CSharp")) && 
+                while (!Directory.Exists(Path.Combine(testsDir, "TestServer")) && 
                        Directory.GetParent(testsDir) != null)
                 {
                     testsDir = Directory.GetParent(testsDir).FullName;
                 }
                 
-                var serverProjectDir = Path.Combine(testsDir, "TestServer.CSharp");
+                var serverProjectDir = Path.Combine(testsDir, "TestServer");
                 if (!Directory.Exists(serverProjectDir))
                 {
-                    throw new DirectoryNotFoundException($"Could not find TestServer.CSharp directory. Searched from {currentDir} up to {testsDir}");
+                    throw new DirectoryNotFoundException($"Could not find TestServer directory. Searched from {currentDir} up to {testsDir}");
                 }
 
                 _output.WriteLine($"Starting C# test server from: {serverProjectDir}");
@@ -265,7 +268,10 @@ namespace RemoteAgent.Tests.Integration
         {
             _output.WriteLine("Waiting for C# test server to be ready...");
             
-            for (int i = 0; i < 30; i++) // Wait up to 30 seconds
+            // Use shorter timeout for faster failure when running inappropriately 
+            var maxAttempts = Environment.GetEnvironmentVariable("CI") != null ? 30 : 10; // 10 seconds in dev, 30 in CI
+            
+            for (int i = 0; i < maxAttempts; i++) 
             {
                 try
                 {
@@ -278,14 +284,21 @@ namespace RemoteAgent.Tests.Integration
                 }
                 catch (HttpRequestException)
                 {
-                    // Server not ready yet
+                    // Server not ready yet, continue waiting
+                }
+                catch (TaskCanceledException)
+                {
+                    // Timeout on the request, continue waiting
                 }
                 
                 await Task.Delay(1000);
-                _output.WriteLine($"Waiting for C# test server... attempt {i + 1}/30");
             }
             
-            throw new TimeoutException("C# test server did not become ready within 30 seconds");
+            // Server failed to start in time - fail fast
+            var timeoutSeconds = maxAttempts;
+            throw new TimeoutException($"C# test server failed to start within {timeoutSeconds} seconds. " +
+                                     "This integration test requires the test server to be running. " +
+                                     "If running unit tests only, use: dotnet test --filter Category!=Integration");
         }
 
         private async Task<string> GetServerLogs()

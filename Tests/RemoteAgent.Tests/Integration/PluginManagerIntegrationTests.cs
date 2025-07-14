@@ -27,7 +27,7 @@ namespace RemoteAgent.Tests
             _pluginManager = new PluginManager(_logger);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public void DebugPluginPath_ShouldShowCurrentDirectoryAndPluginPath()
         {
             // Debug - Check what directory we're running from
@@ -49,7 +49,7 @@ namespace RemoteAgent.Tests
             Assert.True(pluginExists, $"CorePlugins.dll should exist at {pluginPath}");
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task LoadCorePluginsAsync_ShouldLoadDirectoryListPlugin()
         {
             // Act
@@ -65,7 +65,7 @@ namespace RemoteAgent.Tests
             Assert.NotNull(plugin);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task LoadedPlugin_ShouldImplementIPluginInterface()
         {
             // Arrange
@@ -89,7 +89,7 @@ namespace RemoteAgent.Tests
             Assert.True(unloadResult);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task DirectoryListPlugin_WithTestArguments_ShouldExecuteCorrectly()
         {
             // Arrange
@@ -112,7 +112,7 @@ namespace RemoteAgent.Tests
             Assert.Contains("Directory listing for", result.OutputData.ToString());
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task DiagnosePluginLoading_ShouldShowWhatIsLoaded()
         {
             // Act

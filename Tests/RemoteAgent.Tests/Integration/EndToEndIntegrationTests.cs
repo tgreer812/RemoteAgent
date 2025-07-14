@@ -41,7 +41,7 @@ namespace RemoteAgent.Tests
             _coreHost = CoreHostFactory.CreateDefault();
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task FullSystem_StartupAndShutdown_ShouldWorkCorrectly()
         {
             // Act - Start the system
@@ -61,7 +61,7 @@ namespace RemoteAgent.Tests
             Assert.False(_coreHost.IsRunning);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task PluginSystem_LoadAndExecute_ShouldWorkEndToEnd()
         {
             // Arrange
@@ -118,7 +118,7 @@ namespace RemoteAgent.Tests
             // Note: Full verification would require a more sophisticated event waiting mechanism
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task ConfigurationLoading_ShouldWorkCorrectly()
         {
             // Act
@@ -131,7 +131,7 @@ namespace RemoteAgent.Tests
             // Note: AgentConfig doesn't have ServerUri property in current implementation
         }
 
-        [Fact] 
+        [Fact]        [Trait("Category", "Integration")] 
         public async Task SystemResilience_BadConfig_ShouldHandleGracefully()
         {
             // Arrange - Create invalid config
