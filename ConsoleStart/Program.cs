@@ -22,11 +22,14 @@ namespace ConsoleStart
 
             try
             {
-                // Create the core host using the new factory
-                _coreHost = CoreHostFactory.CreateDefault();
-                
-                // Start the core host - look for config in the executable directory
+                // Load configuration first
                 var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AgentConfig.json");
+                var config = AgentConfig.LoadFromFile(configPath);
+                
+                // Create the core host using the new factory with the loaded config
+                _coreHost = CoreHostFactory.CreateDefault(config: config);
+                
+                // Start the core host
                 await _coreHost.StartAsync(configPath);
                 
                 Console.WriteLine("Remote Agent is running. Press Ctrl+C to stop.");
