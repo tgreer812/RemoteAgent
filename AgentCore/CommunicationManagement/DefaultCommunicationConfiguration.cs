@@ -16,22 +16,24 @@ namespace AgentCore.CommunicationManagement
         public int MaxHandshakeRetries { get; }
         public Guid AgentGuid { get; }
         public int? AgentId { get; set; }
+        public TimeSpan TaskPollingInterval { get; }
 
-        public DefaultCommunicationConfiguration(AgentConfig config = null)
+        public DefaultCommunicationConfiguration(AgentConfig? config = null)
         {
-            // TODO: In a real implementation, these would come from config files, environment variables, etc.
-            ServerAddress = "http://localhost:5148";
+            // Use config values if provided, otherwise use defaults
+            ServerAddress = config?.ServerAddress ?? "http://localhost:5148";
             TaskingEndpoint = "api/tasking";
             JobEndpoint = "api/job";
             AgentHelloEndpoint = "api/agent/hello";
             RequestTimeout = TimeSpan.FromSeconds(30);
             HandshakeRetryDelay = TimeSpan.FromSeconds(30);
             MaxHandshakeRetries = 5;
+            TaskPollingInterval = TimeSpan.FromSeconds(config?.TaskPollingIntervalSeconds ?? 30);
             
             // Get AgentGuid from provided config if available, otherwise generate a new one
             try
             {
-                string configAgentGuid = config?.AgentGuid;
+                string? configAgentGuid = config?.AgentGuid;
                 AgentGuid = !string.IsNullOrEmpty(configAgentGuid) ? Guid.Parse(configAgentGuid) : Guid.NewGuid();
                 AgentId = config?.AgentId;
             }
@@ -52,7 +54,8 @@ namespace AgentCore.CommunicationManagement
             TimeSpan? handshakeRetryDelay = null,
             int maxHandshakeRetries = 5,
             Guid? agentGuid = null,
-            int? agentId = null)
+            int? agentId = null,
+            TimeSpan? taskPollingInterval = null)
         {
             ServerAddress = serverAddress ?? throw new ArgumentNullException(nameof(serverAddress));
             TaskingEndpoint = taskingEndpoint;
@@ -63,6 +66,7 @@ namespace AgentCore.CommunicationManagement
             MaxHandshakeRetries = maxHandshakeRetries;
             AgentGuid = agentGuid ?? Guid.NewGuid();
             AgentId = agentId;
+            TaskPollingInterval = taskPollingInterval ?? TimeSpan.FromSeconds(30);
         }
     }
 }

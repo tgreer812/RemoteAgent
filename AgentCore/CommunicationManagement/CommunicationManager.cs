@@ -7,6 +7,7 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using static AgentCore.EventManagement.EventDispatcher;
 
@@ -19,13 +20,15 @@ namespace AgentCore.CommunicationManagement
     {
         private readonly IHttpClientWrapper _httpClient;
         private readonly ICommunicationConfiguration _config;
-        private readonly IEventDispatcher _eventDispatcher;
+        private readonly IEventDispatcher? _eventDispatcher;
         private readonly IMessageSerializer _messageSerializer;
         private readonly ILogger _logger;
-        private readonly AgentConfig _agentConfig;
+        private readonly AgentConfig? _agentConfig;
         
         private bool _isRunning;
         private bool _disposed;
+        private Timer? _pollingTimer;
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
 
         public bool IsRunning => _isRunning;
 
@@ -38,9 +41,9 @@ namespace AgentCore.CommunicationManagement
             ILogger logger,
             IHttpClientWrapper httpClient,
             ICommunicationConfiguration config,
-            IEventDispatcher eventDispatcher,
+            IEventDispatcher? eventDispatcher,
             IMessageSerializer messageSerializer,
-            AgentConfig agentConfig = null)
+            AgentConfig? agentConfig = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -75,6 +78,23 @@ namespace AgentCore.CommunicationManagement
                         if (handshakeSuccessful)
                         {
                             _logger.LogInfo("Background handshake completed successfully");
+                            
+                            // Start periodic polling after successful handshake
+                            StartPeriodicPolling();
+                            
+                            // Make an immediate task request after handshake
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await Task.Delay(1000); // Small delay to ensure everything is set up
+                                    await RequestTaskingAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError("Error in immediate task request after handshake", ex);
+                                }
+                            });
                         }
                         else
                         {
@@ -110,6 +130,12 @@ namespace AgentCore.CommunicationManagement
             
             try
             {
+                // Stop polling timer
+                StopPeriodicPolling();
+                
+                // Cancel any ongoing operations
+                _cancellationTokenSource.Cancel();
+                
                 // Unsubscribe from events
                 UnsubscribeFromEvents();
                 
@@ -370,7 +396,7 @@ namespace AgentCore.CommunicationManagement
             }
         }
 
-        private void OnPluginCompleted(object sender, EventArgs e)
+        private void OnPluginCompleted(object? sender, EventArgs e)
         {
             try
             {
@@ -390,7 +416,7 @@ namespace AgentCore.CommunicationManagement
             }
         }
 
-        private void OnTaskingRequested(object sender, EventArgs e)
+        private void OnTaskingRequested(object? sender, EventArgs e)
         {
             try
             {
@@ -399,6 +425,48 @@ namespace AgentCore.CommunicationManagement
             catch (Exception ex)
             {
                 _logger.LogError("Error handling RequestTasking event", ex);
+            }
+        }
+
+        private void StartPeriodicPolling()
+        {
+            if (_pollingTimer != null)
+            {
+                _logger.LogWarning("Polling timer is already running");
+                return;
+            }
+
+            var pollingInterval = _config.TaskPollingInterval;
+            _logger.LogInfo($"Starting periodic task polling with interval: {pollingInterval.TotalSeconds} seconds");
+
+            _pollingTimer = new Timer(async _ => await OnPollingTimerElapsed(), null, pollingInterval, pollingInterval);
+        }
+
+        private void StopPeriodicPolling()
+        {
+            if (_pollingTimer != null)
+            {
+                _logger.LogInfo("Stopping periodic task polling");
+                _pollingTimer.Dispose();
+                _pollingTimer = null;
+            }
+        }
+
+        private async Task OnPollingTimerElapsed()
+        {
+            if (!_isRunning || _cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            try
+            {
+                _logger.LogInfo("Periodic task polling triggered");
+                await RequestTaskingAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error during periodic task polling", ex);
             }
         }
 
@@ -411,6 +479,8 @@ namespace AgentCore.CommunicationManagement
                     _ = Task.Run(async () => await Stop());
                 }
                 
+                _pollingTimer?.Dispose();
+                _cancellationTokenSource?.Dispose();
                 _httpClient?.Dispose();
                 _disposed = true;
             }

@@ -20,15 +20,15 @@ namespace CorePlugins.DirectoryListPlugin
         {
         }
 
-        public override async Task<bool> LoadAsync(PluginArguments agentPluginArguments = null)
+        public override async Task<bool> LoadAsync(PluginArguments? agentPluginArguments = null)
         {
             Logger.LogInfo("DirectoryListPlugin loaded");
             return await Task.FromResult(true); // Use Task.FromResult for async-compatible return
         }
 
-        public override async Task<PluginResult> StartAsync(PluginArguments args = null, CancellationToken cancellationToken = default)
+        public override async Task<PluginResult> StartAsync(PluginArguments? args = null, CancellationToken cancellationToken = default)
         {
-            DirectoryListArguments arguments = new DirectoryListArguments(args);
+            DirectoryListArguments arguments = new DirectoryListArguments(args ?? new PluginArguments());
 
             if (string.IsNullOrEmpty(arguments.Path))
             {
@@ -45,10 +45,16 @@ namespace CorePlugins.DirectoryListPlugin
             try
             {
                 // Use Task.Run to offload potentially blocking IO operation to a background thread
+                // Get both files and directories
                 string[] files = await Task.Run(() => Directory.GetFiles(arguments.Path), cancellationToken);
+                string[] directories = await Task.Run(() => Directory.GetDirectories(arguments.Path), cancellationToken);
+                
+                // Combine and sort all entries
+                var allEntries = files.Concat(directories).OrderBy(entry => entry).ToArray();
+                
                 string output = $@"Directory listing for {arguments.Path}:"
                                  + Environment.NewLine
-                                 + string.Join(Environment.NewLine, files);
+                                 + string.Join(Environment.NewLine, allEntries);
 
                 // Return PluginResult with success and output data
                 return new PluginResult()
@@ -69,13 +75,13 @@ namespace CorePlugins.DirectoryListPlugin
             }
         }
 
-        public override async Task<bool> StopAsync(PluginArguments agentPluginArguments = null)
+        public override async Task<bool> StopAsync(PluginArguments? agentPluginArguments = null)
         {
             Logger.LogInfo("DirectoryListPlugin stopped (no specific stop logic).");
             return await Task.FromResult(true); // Use Task.FromResult for async-compatible return, no specific stop action
         }
 
-        public override async Task<bool> UnloadAsync(PluginArguments agentPluginArguments = null)
+        public override async Task<bool> UnloadAsync(PluginArguments? agentPluginArguments = null)
         {
             Logger.LogInfo("DirectoryListPlugin unloaded");
             return await Task.FromResult(true); // Use Task.FromResult for async-compatible return
