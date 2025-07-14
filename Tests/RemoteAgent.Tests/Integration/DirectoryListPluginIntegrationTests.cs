@@ -39,7 +39,7 @@ namespace RemoteAgent.Tests
             _coreHost = CoreHostFactory.CreateDefault();
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task DirectoryListPlugin_WithValidPath_ShouldReturnFileList()
         {
             // Arrange - Start the core host so plugins are loaded
@@ -63,7 +63,7 @@ namespace RemoteAgent.Tests
             Assert.Contains(_testDirectory, outputText);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task DirectoryListPlugin_WithInvalidPath_ShouldReturnFailure()
         {
             // Arrange
@@ -83,7 +83,7 @@ namespace RemoteAgent.Tests
             Assert.Contains("Path does not exist", result.ErrorMessage);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task DirectoryListPlugin_WithEmptyPath_ShouldReturnFailure()
         {
             // Arrange
@@ -103,7 +103,7 @@ namespace RemoteAgent.Tests
             Assert.Contains("Path argument is required", result.ErrorMessage);
         }
 
-        [Fact]
+        [Fact]        [Trait("Category", "Integration")]
         public async Task PluginManager_ShouldLoadDirectoryListPluginOnStartup()
         {
             // Arrange & Act
