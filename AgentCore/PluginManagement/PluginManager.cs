@@ -53,7 +53,31 @@ namespace AgentCore.PluginManagement
             // by searching for the AgentPluginAttribute
             // and instantiating the class
             var pluginPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CorePlugins.dll");
-            Assembly corePluginsAssembly = Assembly.LoadFrom(pluginPath);
+            Assembly corePluginsAssembly = null;
+            try
+            {
+                corePluginsAssembly = Assembly.LoadFrom(pluginPath);
+            }
+            catch (FileNotFoundException ex)
+            {
+                Logger.LogError($"Plugin assembly not found at path: {pluginPath}. Exception: {ex.Message}");
+                return;
+            }
+            catch (BadImageFormatException ex)
+            {
+                Logger.LogError($"Plugin assembly at path {pluginPath} is not a valid .NET assembly. Exception: {ex.Message}");
+                return;
+            }
+            catch (FileLoadException ex)
+            {
+                Logger.LogError($"Plugin assembly at path {pluginPath} could not be loaded. Exception: {ex.Message}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"An unexpected error occurred while loading the plugin assembly at path {pluginPath}. Exception: {ex.Message}");
+                return;
+            }
 
             // Create a context object to pass to the plugins
             PluginContext context = new PluginContext();
