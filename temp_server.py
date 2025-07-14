@@ -37,6 +37,10 @@ class TempC2Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/tasking/"):
             agent_id = self.path.split("/")[-1]
             self.handle_tasking_request(agent_id)
+        elif self.path == "/api/test":
+            self.handle_test_endpoint()
+        elif self.path == "/api/logs":
+            self.handle_logs_endpoint()
         else:
             self.send_error(404, "Not Found")
     
@@ -122,6 +126,33 @@ class TempC2Handler(BaseHTTPRequestHandler):
             print(f"Error in job result: {e}")
             self.send_error(500, str(e))
     
+    def handle_test_endpoint(self):
+        """Handle test endpoint for health checks"""
+        try:
+            response = {
+                "status": "ok",
+                "agents": len(self.agents),
+                "pending_jobs": sum(len(jobs) for jobs in self.pending_jobs.values()),
+                "completed_jobs": len(self.completed_jobs)
+            }
+            self.send_json_response(200, response)
+        except Exception as e:
+            print(f"Error in test endpoint: {e}")
+            self.send_error(500, str(e))
+    
+    def handle_logs_endpoint(self):
+        """Handle logs endpoint for test verification"""
+        try:
+            response = {
+                "agents": self.agents,
+                "pending_jobs": self.pending_jobs,
+                "completed_jobs": self.completed_jobs
+            }
+            self.send_json_response(200, response)
+        except Exception as e:
+            print(f"Error in logs endpoint: {e}")
+            self.send_error(500, str(e))
+
     def send_json_response(self, status_code, data):
         """Send JSON response"""
         response_json = json.dumps(data)

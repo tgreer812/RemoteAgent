@@ -8,9 +8,18 @@ namespace AgentCore
     public class AgentConfig
     {
         [JsonPropertyName("agentGuid")]
-        public string AgentGuid { get; set; } // Make property settable only within the class
+        public string AgentGuid { get; set; } = string.Empty;
 
         public int AgentId { get; set; }
+
+        [JsonPropertyName("serverAddress")]
+        public string ServerAddress { get; set; } = "http://localhost:5148";
+
+        [JsonPropertyName("serverPort")]
+        public int ServerPort { get; set; } = 5148;
+
+        [JsonPropertyName("taskPollingIntervalSeconds")]
+        public int TaskPollingIntervalSeconds { get; set; } = 30;
 
         public AgentConfig()
         {
@@ -27,7 +36,7 @@ namespace AgentCore
             try
             {
                 string configJson = File.ReadAllText(configPath);
-                AgentConfig config = JsonSerializer.Deserialize<AgentConfig>(configJson); // No nullable here
+                AgentConfig? config = JsonSerializer.Deserialize<AgentConfig>(configJson);
 
                 // Check if deserialization resulted in a null object (indicates failure)
                 if (config == null)

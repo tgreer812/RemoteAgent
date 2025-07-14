@@ -51,5 +51,10 @@ namespace AgentCore.CommunicationManagement
         /// The agent ID assigned by the server (set during handshake)
         /// </summary>
         int? AgentId { get; set; }
+
+        /// <summary>
+        /// The interval between task polling requests
+        /// </summary>
+        TimeSpan TaskPollingInterval { get; }
     }
 }
