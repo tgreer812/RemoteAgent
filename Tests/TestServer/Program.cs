@@ -217,19 +217,17 @@ public class Program
             
             if (jobs.Count > 0)
             {
-                var responseObj = new { jobs };
                 Console.WriteLine($"Sending {jobs.Count} job(s) to agent {agentId}");
                 // Clear pending jobs after sending
                 PendingJobs[agentId] = new List<JobInfo>();
             }
             else
             {
-                var responseObj = new { jobs = new List<JobInfo>() };
                 Console.WriteLine($"No pending jobs for agent {agentId}");
             }
             
-            var finalResponse = new { jobs };
-            await SendJsonResponseAsync(response, 200, finalResponse);
+            var responseObj = new { jobs };
+            await SendJsonResponseAsync(response, 200, responseObj);
         }
         catch (Exception ex)
         {
